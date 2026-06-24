@@ -314,7 +314,7 @@ input[type=number],input[type=text],input[type=date],select{background:#fff}
         </table>
       </div>
       <button onclick="addManualRow()" style="margin-top:8px;font-size:12px;padding:5px 12px;cursor:pointer;border-radius:6px;border:0.5px solid #d1d5db;background:#fff;color:#6b7280">+ 행 추가</button>
-      <div style="font-size:11px;color:#9ca3af;margin-top:8px;line-height:1.8">좌상단 ⊞ 클릭하면 전체 선택 → Ctrl+C 복사 &nbsp;|&nbsp; 엑셀에서 Ctrl+V 붙여넣기</div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:8px;line-height:2">좌상단 <span style="border:1px solid #d1d5db;border-radius:3px;padding:1px 4px;font-size:10px">⊞</span> 클릭하면 전체 선택 → <kbd style="background:#f3f4f6;border:1px solid #d1d5db;border-radius:3px;padding:1px 5px;font-size:10px">Ctrl+C</kbd> 복사 &nbsp;|&nbsp; 마우스 드래그로 범위 선택 후 <kbd style="background:#f3f4f6;border:1px solid #d1d5db;border-radius:3px;padding:1px 5px;font-size:10px">Ctrl+C</kbd> &nbsp;|&nbsp; 엑셀에서 <kbd style="background:#f3f4f6;border:1px solid #d1d5db;border-radius:3px;padding:1px 5px;font-size:10px">Ctrl+V</kbd> 붙여넣기 &nbsp;|&nbsp; <span style="display:inline-block;width:9px;height:9px;background:#2563eb;vertical-align:middle;margin-right:2px"></span> 핸들 드래그로 자동 채우기</div>
     </div>
     <div class="card" style="padding:12px 16px">
       <button onclick="runAssignment('manual')" style="width:100%;padding:14px;background:#1e3a6e;color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ti ti-player-play" style="font-size:16px"></i> 배정 실행</button>
@@ -336,9 +336,18 @@ function switchTab(t){document.querySelectorAll('.tab').forEach(b=>b.classList.r
 function parseCSV(text){return text.trim().split('\n').map(line=>{const cols=[];let cur='';let inQ=false;for(const c of line){if(c==='"'){inQ=!inQ;}else if(c===','&&!inQ){cols.push(cur.trim());cur='';}else cur+=c;}cols.push(cur.trim());return cols;});}
 function findColIndex(headers,candidates){for(const c of candidates){const idx=headers.findIndex(h=>h.replace(/\s/g,'').toLowerCase()===c.replace(/\s/g,'').toLowerCase());if(idx!==-1)return idx;}return -1;}
 const WEBAPP_URL='https://script.google.com/macros/s/AKfycbx-mKPysiD5NMtvhwp7OVufxPcB-3AmNnPR355Ik2SB0jDLysRVdEhOxsoknSAAKh8/exec';
+function applySheetData(rows){
+  channelDB=rows.map(r=>({channel:(r['채널명']||'').toString().trim(),agency:(r['업체명']||'').toString().trim(),format:(r['포맷']||'릴스').toString().trim(),price:parseInt((r['단가']||'0').toString().replace(/,/g,''))||0,views:parseInt((r['평균조회수']||r['조회수']||'0').toString().replace(/,/g,''))||0})).filter(r=>r.channel);
+  updateAgencyFilter();updateExcludeAgencyFilter();renderTable();updateStats();renderExcludeSelected();
+}
+
 async function syncSheets(url){
   const icon=document.getElementById('sync-icon'),btn=document.getElementById('sync-btn');
-  icon.classList.add('spinning');btn.disabled=true;setStatus('동기화 중...','info');
+  // 캐시된 데이터 즉시 표시
+  const cached=localStorage.getItem('channelDBCache');
+  if(cached){try{applySheetData(JSON.parse(cached));setStatus('캐시 데이터 표시 중 · 백그라운드 동기화 중...','info');}catch(e){}}
+  else{setStatus('동기화 중...','info');}
+  icon.classList.add('spinning');btn.disabled=true;
   try{
     const res=await fetch(WEBAPP_URL);
     if(!res.ok)throw new Error('데이터를 불러올 수 없어요.');
@@ -346,12 +355,10 @@ async function syncSheets(url){
     if(json.status!=='ok')throw new Error(json.message||'오류가 발생했습니다.');
     const rows=json.data;
     if(!rows.length)throw new Error('데이터가 없습니다.');
-    const h=Object.keys(rows[0]);
-    const iCh=findColIndex(h,['채널명','channel']),iAg=findColIndex(h,['업체명','업체','agency']),iFm=findColIndex(h,['포맷','format']),iPr=findColIndex(h,['단가','price']),iVi=findColIndex(h,['평균조회수','평균 조회수','조회수','views','채널 URL']);
-    channelDB=rows.map(r=>({channel:(r['채널명']||'').toString().trim(),agency:(r['업체명']||'').toString().trim(),format:(r['포맷']||'릴스').toString().trim(),price:parseInt((r['단가']||'0').toString().replace(/,/g,''))||0,views:parseInt((r['평균조회수']||r['조회수']||'0').toString().replace(/,/g,''))||0})).filter(r=>r.channel);
-    updateAgencyFilter();updateExcludeAgencyFilter();renderTable();updateStats();renderExcludeSelected();
+    localStorage.setItem('channelDBCache',JSON.stringify(rows));
+    applySheetData(rows);
     setStatus(`✓ ${channelDB.length}개 채널 동기화 완료 · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`,'success');
-  }catch(e){setStatus('오류: '+e.message,'error');}
+  }catch(e){setStatus((cached?'캐시 데이터 표시 중 · ':'')+'오류: '+e.message,'error');}
   finally{icon.classList.remove('spinning');btn.disabled=false;}
 }
 function setStatus(msg,type){const el=document.getElementById('sync-status');el.style.color={success:'var(--color-text-success)',error:'var(--color-text-danger)',warn:'var(--color-text-warning)',info:'var(--color-text-secondary)'}[type];el.textContent=msg;}
@@ -835,16 +842,25 @@ function renderManualTable(){
   if(!manualRows.length){tbody.innerHTML=`<tr><td colspan="5" style="padding:16px;text-align:center;color:var(--color-text-tertiary);font-size:12px">행을 추가하거나 엑셀에서 Ctrl+V로 붙여넣기 하세요</td></tr>`;return;}
   tbody.innerHTML=manualRows.map((r,i)=>`<tr>
     <td data-ri="${i}" data-ci="0" style="padding:4px;text-align:center;color:#9ca3af;font-size:11px;border:0.5px solid #e5e7eb;background:#f9fafb">${i+1}</td>
-    <td data-ri="${i}" data-ci="1" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.date}" oninput="manualRows[${i}].date=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:90px;background:transparent"></td>
-    <td data-ri="${i}" data-ci="2" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.agency}" oninput="manualRows[${i}].agency=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:80px;background:transparent"></td>
-    <td data-ri="${i}" data-ci="3" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.channel}" oninput="manualRows[${i}].channel=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:80px;background:transparent"></td>
+    <td data-ri="${i}" data-ci="1" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.date}" placeholder="20260625" oninput="manualRows[${i}].date=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:90px;background:transparent"></td>
+    <td data-ri="${i}" data-ci="2" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.agency}" placeholder="A업체" oninput="manualRows[${i}].agency=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:80px;background:transparent"></td>
+    <td data-ri="${i}" data-ci="3" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.channel}" placeholder="채널1" oninput="manualRows[${i}].channel=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:80px;background:transparent"></td>
     <td data-ri="${i}" data-ci="4" style="padding:4px;text-align:center;border:0.5px solid #e5e7eb"><button onclick="deleteManualRow(${i})" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:14px">×</button></td>
   </tr>`).join('');
   const table=document.getElementById('manual-schedule-table');
   if(table){table.classList.add('ss-table');ssAttach(table);}
 }
 
-function selectAllManual(){const table=document.getElementById('manual-schedule-table');const range=document.createRange();range.selectNode(table);window.getSelection().removeAllRanges();window.getSelection().addRange(range);}
+function selectAllManual(){
+  if(!manualRows.length)return;
+  const table=document.getElementById('manual-schedule-table');
+  if(!table)return;
+  ssAttach(table);
+  _ss.table=table;
+  _ss.anchor={ri:0,ci:1};
+  _ss.cursor={ri:manualRows.length-1,ci:3};
+  ssHighlight();
+}
 
 // ===== 스프레드시트 기능 =====
 let _ss={anchor:null,cursor:null,table:null};
@@ -969,12 +985,41 @@ document.addEventListener('keydown',function(e){
 document.addEventListener('paste',function(e){
   const matPanel=document.getElementById('mat-panel-manual');
   if(!matPanel||matPanel.style.display==='none')return;
-  if(document.activeElement&&document.activeElement.tagName==='INPUT')return;
+
+  // 테이블 안 INPUT에 포커스된 경우 → 그 셀 위치 기준으로 처리
+  const activeInput=document.activeElement;
+  const insideTable=activeInput&&activeInput.tagName==='INPUT'&&activeInput.closest('#manual-schedule-table');
+  if(activeInput&&activeInput.tagName==='INPUT'&&!insideTable)return; // 다른 input이면 무시
+
   const text=e.clipboardData.getData('text');
   if(!text)return;
-  const rows=text.trim().split('\n').map(r=>r.split('\t'));
+  const rows=text.trim().split('\n').map(r=>r.split('\t').map(c=>c.trim()));
   if(!rows.length)return;
-  rows.forEach(cols=>{if(cols.length>=3)addManualRow(cols[0]?.trim()||'',cols[1]?.trim()||'',cols[2]?.trim()||'');});
+
+  // 시작 위치 결정: INPUT 포커스 우선, 그 다음 ss선택, 그 다음 맨 끝
+  let startRi=manualRows.length, startCi=1;
+  if(insideTable){
+    const td=activeInput.closest('td[data-ri]');
+    if(td){startRi=+td.dataset.ri;startCi=+td.dataset.ci;}
+    activeInput.blur();
+  } else if(_ss.anchor&&_ss.table&&_ss.table.id==='manual-schedule-table'){
+    startRi=_ss.anchor.ri;startCi=_ss.anchor.ci;
+  }
+
+  const fieldMap={1:'date',2:'agency',3:'channel'};
+  rows.forEach((cols,offset)=>{
+    const ri=startRi+offset;
+    while(manualRows.length<=ri)manualRows.push({date:'',agency:'',channel:''});
+    cols.forEach((val,ci)=>{
+      const field=fieldMap[startCi+ci];
+      if(field)manualRows[ri][field]=val;
+    });
+  });
+  renderManualTable();
+  _ss.table=document.getElementById('manual-schedule-table');
+  _ss.anchor={ri:startRi,ci:startCi};
+  _ss.cursor={ri:startRi+rows.length-1,ci:Math.min(startCi+rows[0].length-1,3)};
+  ssHighlight();
   e.preventDefault();
 });
 window.onload=function(){syncSheets();renderManualTable();};
