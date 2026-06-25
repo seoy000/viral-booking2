@@ -703,16 +703,17 @@ function renderAssignmentResult(mode,result,activeTab){
         <button onclick="downloadAgencyZip('${mode}','${agency.replace(/'/g,"\\'")}')" class="update-btn" style="font-size:12px"><i class="ti ti-download"></i> ZIP</button>
       </div>
       <div style="border:0.5px solid #c7d9f5;border-top:none;border-radius:0 0 8px 8px;overflow:hidden">
-        <table class="ss-table" id="ss-agency-${agency.replace(/[^a-z0-9]/gi,'_')}" style="font-size:12px;table-layout:fixed;width:100%"><thead><tr><th style="width:24px"></th><th style="width:110px">날짜</th><th style="width:160px">채널</th><th style="width:60px">포맷</th><th style="width:280px">폴더명</th><th>파일명</th></tr></thead>
+        <table class="ss-table" id="ss-agency-${agency.replace(/[^a-z0-9]/gi,'_')}" style="font-size:12px;table-layout:fixed;width:100%"><thead><tr><th style="width:110px">날짜</th><th style="width:160px">채널</th><th style="width:60px">포맷</th><th style="width:280px">폴더명</th><th>파일명</th></tr></thead>
         <tbody>${items.map((a,rowIdx)=>{
           const folder=a.assigned?(a.format==='릴스'?`${a.dateNorm}_${a.channel}_썸네일${a.thumbSec}초`:`${a.dateNorm}_${a.agency}_${a.channel}`):'—';
+          const fileContent=a.assigned?(a.file.name+(a.sideFiles&&a.sideFiles.length?'<br><span style="color:#6b7280">속지 '+a.sideFiles.length+'개: '+a.sideFiles.map(f=>f.name).join(', ')+'</span>':'')):'<span style="color:#dc2626">배정 실패</span>';
+          const handle=a.assigned?`<span onmousedown="resDragStart(event,${a._idx},'${mode}')" style="float:right;cursor:grab;color:#9ca3af;font-size:14px;margin-left:8px;user-select:none">⠿</span>`:'';
           return `<tr data-res-idx="${a._idx}" data-res-mode="${mode}" ${a.isConflict?'class="warn-row"':''}>
-            <td style="padding:2px 4px;border:0.5px solid #e5e7eb;text-align:center;color:#9ca3af;font-size:14px;${a.assigned?'cursor:grab':''}" onmousedown="${a.assigned?`resDragStart(event,${a._idx},'${mode}')`:''}">${a.assigned?'⠿':''}</td>
             <td data-ri="${rowIdx}" data-ci="0" style="padding:5px 8px;border:0.5px solid #e5e7eb">${a.dateNorm||'미정'}</td>
             <td data-ri="${rowIdx}" data-ci="1" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-weight:500">${a.channel}</td>
             <td data-ri="${rowIdx}" data-ci="2" style="padding:5px 8px;border:0.5px solid #e5e7eb"><span class="badge ${a.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${a.format}</span></td>
             <td data-ri="${rowIdx}" data-ci="3" style="padding:5px 8px;border:0.5px solid #e5e7eb;color:#2563eb;font-size:11px">${folder}</td>
-            <td data-ri="${rowIdx}" data-ci="4" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${a.assigned?(a.file.name+(a.sideFiles&&a.sideFiles.length?'<br><span style="color:#6b7280">속지 '+a.sideFiles.length+'개: '+a.sideFiles.map(f=>f.name).join(', ')+'</span>':'')):'<span style="color:#dc2626">배정 실패</span>'}</td>
+            <td data-ri="${rowIdx}" data-ci="4" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${handle}${fileContent}</td>
           </tr>`;
         }).join('')}</tbody></table>
       </div>
@@ -721,12 +722,12 @@ function renderAssignmentResult(mode,result,activeTab){
 
   // 전체 배정표
   const allHTML=`<table class="ss-table" id="ss-all-${mode}" style="font-size:12px"><thead><tr><th>날짜</th><th>업체명</th><th>채널</th><th>포맷</th><th>배정 파일</th><th>썸네일</th></tr></thead>
-    <tbody>${assignments.map((a,rowIdx)=>`<tr ${a.isConflict?'class="warn-row"':''}>
+    <tbody>${assignments.map((a,rowIdx)=>`<tr data-res-idx="${a._idx}" data-res-mode="${mode}" ${a.isConflict?'class="warn-row"':''}>
       <td data-ri="${rowIdx}" data-ci="0" style="padding:5px 8px;border:0.5px solid #e5e7eb">${a.dateNorm||'미정'}</td>
       <td data-ri="${rowIdx}" data-ci="1" style="padding:5px 8px;border:0.5px solid #e5e7eb">${a.agency}</td>
       <td data-ri="${rowIdx}" data-ci="2" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-weight:500">${a.channel}</td>
       <td data-ri="${rowIdx}" data-ci="3" style="padding:5px 8px;border:0.5px solid #e5e7eb"><span class="badge ${a.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${a.format}</span></td>
-      <td data-ri="${rowIdx}" data-ci="4" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${a.assigned?a.file.name:'<span style="color:#dc2626">배정 실패</span>'}</td>
+      <td data-ri="${rowIdx}" data-ci="4" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${a.assigned?(`<span onmousedown="resDragStart(event,${a._idx},'${mode}')" style="float:right;cursor:grab;color:#9ca3af;font-size:14px;margin-left:8px;user-select:none">⠿</span>`+a.file.name):'<span style="color:#dc2626">배정 실패</span>'}</td>
       <td data-ri="${rowIdx}" data-ci="5" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${a.thumbSec?a.thumbSec+'초':'-'}</td>
     </tr>`).join('')}</tbody></table>`;
 
