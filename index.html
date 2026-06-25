@@ -97,6 +97,7 @@ input[type=number],input[type=text],input[type=date],select{background:#fff}
 .ss-table td.ss-sel{background:#c7d9f5 !important;outline:1px solid #2563eb;outline-offset:-1px;}
 .ss-table td.ss-fill-preview{background:#dbeafe !important;outline:1px dashed #2563eb;outline-offset:-1px;}
 .fill-handle{position:absolute;bottom:-4px;right:-4px;width:8px;height:8px;background:#2563eb;border:1.5px solid #fff;cursor:crosshair;z-index:10;border-radius:1px;}
+tr.res-drag-over td{background:#dbeafe !important;outline:2px solid #2563eb;outline-offset:-2px;}
 </style>
 </head>
 <body>
@@ -418,7 +419,7 @@ function generateCombos(){
     }
   }
   // 목표 CPV 있으면 가장 근접한 순으로 정렬, 없으면 그대로
-  const combos=targetCPV?[...rawCombos].sort((a,b)=>Math.abs((a.comboCPV||999)-targetCPV)-Math.abs((b.comboCPV||999)-targetCPV)):rawCombos;
+  const combos=targetCPV?[...rawCombos].sort((a,b)=>Math.abs((a.comboCPV||999)-targetCPV)-Math.abs((b.comboCPV||999)-targetCPV)):[...rawCombos].sort((a,b)=>(a.comboCPV||999)-(b.comboCPV||999));
   window._combos=combos;renderComboList();
 }
 function comboSummary(channels){const cost=channels.reduce((s,r)=>s+r.price,0);const views=channels.reduce((s,r)=>s+(r.views||0),0);const cpv=views>0?(cost/views).toFixed(2):'-';return `${channels.length}개 채널 · ${cost.toLocaleString()}원 · ${(views/10000).toFixed(1)}만 조회 · CPV ${cpv}`;}
@@ -702,11 +703,11 @@ function renderAssignmentResult(mode,result,activeTab){
         <button onclick="downloadAgencyZip('${mode}','${agency.replace(/'/g,"\\'")}')" class="update-btn" style="font-size:12px"><i class="ti ti-download"></i> ZIP</button>
       </div>
       <div style="border:0.5px solid #c7d9f5;border-top:none;border-radius:0 0 8px 8px;overflow:hidden">
-        <table class="ss-table" id="ss-agency-${agency.replace(/[^a-z0-9]/gi,'_')}" style="font-size:12px;table-layout:fixed;width:100%"><thead><tr><th style="width:110px">날짜</th><th style="width:160px">채널</th><th style="width:60px">포맷</th><th style="width:280px">폴더명</th><th>파일명</th></tr></thead>
+        <table class="ss-table" id="ss-agency-${agency.replace(/[^a-z0-9]/gi,'_')}" style="font-size:12px;table-layout:fixed;width:100%"><thead><tr><th style="width:24px"></th><th style="width:110px">날짜</th><th style="width:160px">채널</th><th style="width:60px">포맷</th><th style="width:280px">폴더명</th><th>파일명</th></tr></thead>
         <tbody>${items.map((a,rowIdx)=>{
           const folder=a.assigned?(a.format==='릴스'?`${a.dateNorm}_${a.channel}_썸네일${a.thumbSec}초`:`${a.dateNorm}_${a.agency}_${a.channel}`):'—';
-          const draggable=a.assigned?`draggable="true" ondragstart="matDragStart(event,${a._idx},'${mode}')" ondragover="event.preventDefault()" ondrop="matDrop(event,${a._idx},'${mode}')"`:'';
-          return `<tr ${a.isConflict?'class="warn-row"':''} ${draggable} style="${a.assigned?'cursor:grab':''}">
+          return `<tr data-res-idx="${a._idx}" data-res-mode="${mode}" ${a.isConflict?'class="warn-row"':''}>
+            <td style="padding:2px 4px;border:0.5px solid #e5e7eb;text-align:center;color:#9ca3af;font-size:14px;${a.assigned?'cursor:grab':''}" onmousedown="${a.assigned?`resDragStart(event,${a._idx},'${mode}')`:''}">${a.assigned?'⠿':''}</td>
             <td data-ri="${rowIdx}" data-ci="0" style="padding:5px 8px;border:0.5px solid #e5e7eb">${a.dateNorm||'미정'}</td>
             <td data-ri="${rowIdx}" data-ci="1" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-weight:500">${a.channel}</td>
             <td data-ri="${rowIdx}" data-ci="2" style="padding:5px 8px;border:0.5px solid #e5e7eb"><span class="badge ${a.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${a.format}</span></td>
@@ -762,20 +763,52 @@ function matDragStart(event,idx,mode){_matDragIdx=idx;_matDragMode=mode;event.da
 function matDrop(event,toIdx,mode){
   event.preventDefault();
   if(_matDragIdx<0||_matDragIdx===toIdx||_matDragMode!==mode)return;
+  resSwapMaterial(_matDragIdx,toIdx,mode);
+  _matDragIdx=-1;
+}
+
+function resSwapMaterial(fromIdx,toIdx,mode){
   const result=mode==='linked'?linkedResult:manualResult;
   const arr=result.assignments;
-  const from=arr[_matDragIdx],to=arr[toIdx];
-  // 같은 포맷끼리만 교환
-  if(from.format!==to.format){alert('같은 포맷(릴스↔릴스, 배너↔배너)끼리만 교환할 수 있어요.');_matDragIdx=-1;return;}
-  // 배정 파일(소재)만 교환, 슬롯(날짜/채널/업체)은 유지
+  const from=arr[fromIdx],to=arr[toIdx];
+  if(!from||!to)return;
+  if(!from.assigned||!to.assigned){alert('배정된 소재만 교환할 수 있어요.');return;}
+  if(from.format!==to.format){alert('같은 포맷(릴스↔릴스, 배너↔배너)끼리만 교환할 수 있어요.');return;}
   [from.file,to.file]=[to.file,from.file];
   [from.thumbSec,to.thumbSec]=[to.thumbSec,from.thumbSec];
   [from.caption,to.caption]=[to.caption,from.caption];
   [from.motherName,to.motherName]=[to.motherName,from.motherName];
   [from.motherId,to.motherId]=[to.motherId,from.motherId];
   [from.sideFiles,to.sideFiles]=[to.sideFiles,from.sideFiles];
-  _matDragIdx=-1;
   renderAssignmentResult(mode,result);
+}
+
+function resDragStart(event,fromIdx,mode){
+  event.preventDefault();
+  const ghost=document.createElement('div');
+  ghost.style.cssText='position:fixed;z-index:9999;background:#eff6ff;border:1.5px solid #2563eb;border-radius:6px;padding:5px 14px;font-size:12px;pointer-events:none;color:#2563eb;font-weight:500;box-shadow:0 2px 8px rgba(37,99,235,0.2)';
+  ghost.textContent='소재 이동 중...';
+  document.body.appendChild(ghost);
+  let lastTarget=null;
+  const onMove=e=>{
+    ghost.style.left=(e.clientX+14)+'px';
+    ghost.style.top=(e.clientY-10)+'px';
+    document.querySelectorAll('tr.res-drag-over').forEach(r=>r.classList.remove('res-drag-over'));
+    const tr=document.elementFromPoint(e.clientX,e.clientY)?.closest('tr[data-res-idx]');
+    if(tr&&+tr.dataset.resIdx!==fromIdx&&tr.dataset.resMode===mode){tr.classList.add('res-drag-over');lastTarget=tr;}
+    else lastTarget=null;
+  };
+  const onUp=e=>{
+    document.removeEventListener('mousemove',onMove);
+    ghost.remove();
+    document.querySelectorAll('tr.res-drag-over').forEach(r=>r.classList.remove('res-drag-over'));
+    const tr=document.elementFromPoint(e.clientX,e.clientY)?.closest('tr[data-res-idx]');
+    if(tr&&+tr.dataset.resIdx!==fromIdx&&tr.dataset.resMode===mode){
+      resSwapMaterial(fromIdx,+tr.dataset.resIdx,mode);
+    }
+  };
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp,{once:true});
 }
 
 async function downloadAgencyZip(mode,agency){
@@ -932,6 +965,8 @@ function ssAttach(tableEl){
     // 셀 선택
     const td=e.target.closest('td[data-ri]');
     if(!td)return;
+    // 드래그 가능한 행은 HTML drag-and-drop 우선 — 셀 선택 건너뜀
+    if(td.closest('tr[draggable="true"]'))return;
     _ss.table=td.closest('table');
     _ss.anchor={ri:+td.dataset.ri,ci:+td.dataset.ci};
     _ss.cursor={..._ss.anchor};
