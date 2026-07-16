@@ -529,7 +529,8 @@ function generateCombos(){
     if(budgetMin&&totalCost<budgetMin)continue;
     if(selected.length){
       if(!allowDuplicates)selected.forEach(ch=>usedChannels.add(ch.channel+'_'+ch.format));
-      const comboCPV=totalViews>0?totalCost/totalViews:null;
+      const totalListupViews=selected.reduce((s,r)=>{const v=r.expectedViews>0?r.expectedViews:(r.views||0);return s+v;},0);
+      const comboCPV=totalListupViews>0?totalCost/totalListupViews:null;
       rawCombos.push({id:Date.now()+c,name:`조합 ${c+1}`,date:'',channels:[...selected],originalChannels:[...selected],comboCPV});
     }
   }
@@ -537,7 +538,7 @@ function generateCombos(){
   const combos=targetCPV?[...rawCombos].sort((a,b)=>Math.abs((a.comboCPV||999)-targetCPV)-Math.abs((b.comboCPV||999)-targetCPV)):[...rawCombos].sort((a,b)=>(a.comboCPV||999)-(b.comboCPV||999));
   window._combos=combos;renderComboList();
 }
-function comboSummary(channels){const cost=channels.reduce((s,r)=>s+r.price,0);const views=channels.reduce((s,r)=>s+(r.views||0),0);const cpv=views>0?(cost/views).toFixed(2):'-';return `${channels.length}개 채널 · ${cost.toLocaleString()}원 · ${(views/10000).toFixed(1)}만 조회 · CPV ${cpv}`;}
+function comboSummary(channels){const cost=channels.reduce((s,r)=>s+r.price,0);const views=channels.reduce((s,r)=>{const v=r.expectedViews>0?r.expectedViews:(r.views||0);return s+v;},0);const cpv=views>0?(cost/views).toFixed(2):'-';return `${channels.length}개 채널 · ${cost.toLocaleString()}원 · ${(views/10000).toFixed(1)}만 조회 · CPV ${cpv}`;}
 let comboSortState={};
 function sortCombo(ci,key){const state=comboSortState[ci]||{key:null,asc:true};const asc=state.key===key?!state.asc:true;comboSortState[ci]={key,asc};const ch=window._combos[ci].channels;ch.sort((a,b)=>{let va,vb;if(key==='channel'){va=a.channel;vb=b.channel;}else if(key==='agency'){va=a.agency;vb=b.agency;}else if(key==='format'){va=a.format;vb=b.format;}else if(key==='grade'){const o={'상':0,'중':1,'하':2,'-':3};va=o[gradeFromCPV(computeListupCPV(a))]??3;vb=o[gradeFromCPV(computeListupCPV(b))]??3;}else if(key==='price'){va=a.price;vb=b.price;}else if(key==='views'){va=a.views||0;vb=b.views||0;}else if(key==='cpv'){va=computeListupCPV(a)||999;vb=computeListupCPV(b)||999;}if(typeof va==='string')return asc?va.localeCompare(vb):vb.localeCompare(va);return asc?va-vb:vb-va;});document.getElementById(`listup-tbody-${ci}`).innerHTML=renderListupRows(ch,ci);renderComboHeaders(ci);}
 function sortArrow(ci,key){const s=comboSortState[ci];if(!s||s.key!==key)return'<span style="color:#ccc;font-size:10px">↕</span>';return s.asc?'<span style="color:#2563eb;font-size:10px">↑</span>':'<span style="color:#2563eb;font-size:10px">↓</span>';}
@@ -562,7 +563,7 @@ function confirmCombo(ci){const combo=window._combos[ci];if(!combo)return;const 
 function cancelCombo(id){const idx=confirmedCombos.findIndex(c=>c.id===id);if(idx>=0)confirmedCombos.splice(idx,1);renderBookingTab();}
 const DUPE_COLORS=['#ef4444','#f97316','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ec4899','#2563eb'];
 let bookingSortState={};
-function sortBooking(ci,key){const state=bookingSortState[ci]||{key:null,asc:true};const asc=state.key===key?!state.asc:true;bookingSortState[ci]={key,asc};const ch=confirmedCombos[ci].channels;ch.sort((a,b)=>{let va,vb;if(key==='channel'){va=a.channel;vb=b.channel;}else if(key==='agency'){va=a.agency;vb=b.agency;}else if(key==='format'){va=a.format;vb=b.format;}else if(key==='grade'){const o={'상':0,'중':1,'하':2,'-':3};va=o[gradeFromCPV(computeCPV(a))]??3;vb=o[gradeFromCPV(computeCPV(b))]??3;}else if(key==='price'){va=a.price;vb=b.price;}else if(key==='views'){va=a.views||0;vb=b.views||0;}else if(key==='cpv'){va=computeCPV(a)||999;vb=computeCPV(b)||999;}if(typeof va==='string')return asc?va.localeCompare(vb):vb.localeCompare(va);return asc?va-vb:vb-va;});renderBookingTab();}
+function sortBooking(ci,key){const state=bookingSortState[ci]||{key:null,asc:true};const asc=state.key===key?!state.asc:true;bookingSortState[ci]={key,asc};const ch=confirmedCombos[ci].channels;ch.sort((a,b)=>{let va,vb;if(key==='channel'){va=a.channel;vb=b.channel;}else if(key==='agency'){va=a.agency;vb=b.agency;}else if(key==='format'){va=a.format;vb=b.format;}else if(key==='grade'){const o={'상':0,'중':1,'하':2,'-':3};va=o[gradeFromCPV(computeCPV(a))]??3;vb=o[gradeFromCPV(computeCPV(b))]??3;}else if(key==='price'){va=a.price;vb=b.price;}else if(key==='views'){va=a.views||0;vb=b.views||0;}else if(key==='cpv'){va=computeListupCPV(a)||999;vb=computeListupCPV(b)||999;}if(typeof va==='string')return asc?va.localeCompare(vb):vb.localeCompare(va);return asc?va-vb:vb-va;});renderBookingTab();}
 function bookingSortArrow(ci,key){const s=bookingSortState[ci];if(!s||s.key!==key)return'<span style="color:#ccc;font-size:10px">↕</span>';return s.asc?'<span style="color:#2563eb;font-size:10px">↑</span>':'<span style="color:#2563eb;font-size:10px">↓</span>';}
 function getDupeColorMap(){const chCount={};confirmedCombos.forEach(combo=>{combo.channels.forEach(ch=>{const k=ch.channel+'__'+ch.format;chCount[k]=(chCount[k]||new Set());chCount[k].add(combo.id);});});const dupeKeys=Object.entries(chCount).filter(([k,s])=>s.size>1).map(([k,s])=>({key:k,combos:[...s].sort().join('_')}));const groupMap={};dupeKeys.forEach(({key,combos})=>{if(!groupMap[combos])groupMap[combos]=[];groupMap[combos].push(key);});const colorMap={};Object.values(groupMap).forEach((keys,i)=>{keys.forEach(k=>colorMap[k]=DUPE_COLORS[i%DUPE_COLORS.length]);});return colorMap;}
 function addBookingChannel(ci,dbIdx){if(dbIdx===undefined){renderBookingAddList(ci);return;}if(dbIdx<0||!channelDB[dbIdx])return;confirmedCombos[ci].channels.push({...channelDB[dbIdx]});renderBookingTab();}
@@ -595,7 +596,7 @@ function renderHistoryTab(){
       bodyHTML=entry.combos.map(combo=>{
         const dateStr=combo.date?new Date(combo.date).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',weekday:'short'}):'';
         const rowsHTML=combo.channels.map(r=>{
-          const cpv=computeCPV(r),g=gradeFromCPV(cpv);
+          const cpv=computeListupCPV(r),g=gradeFromCPV(cpv);
           const slotKey=combo.id+'__'+r.channel+'__'+r.format;
           const assigned=assignments[slotKey];
           return `<tr><td>${r.agency}</td><td><span class="badge ${r.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${r.format}</span></td><td><span class="badge ${badgeClass(g)}" style="font-size:10px">${g}</span></td><td style="font-weight:500">${r.channel}</td><td>${r.price.toLocaleString()}원</td><td>${(r.views||0).toLocaleString()}</td><td>${cpv?cpv.toFixed(2):'-'}</td><td style="font-size:11px;color:var(--color-text-info)">${assigned?`[${assigned.folder}]${assigned.key}`:'-'}</td></tr>`;
@@ -656,8 +657,8 @@ function renderBookingManualTable(){
   if(!bookingManualRows.length){tbody.innerHTML=`<tr><td colspan="10" style="padding:16px;text-align:center;color:var(--color-text-tertiary);font-size:12px">행을 추가하거나 엑셀에서 Ctrl+V로 붙여넣기 하세요</td></tr>`;return;}
   const autoStyle='background:#f9fafb;color:var(--color-text-secondary)';
   tbody.innerHTML=bookingManualRows.map((r,i)=>{
-    const cpv=(r.price>0&&r.views>0)?(r.price/r.views).toFixed(2):'-';
-    const grade=gradeFromCPV(r.price>0&&r.views>0?r.price/r.views:null);
+    const cpv=computeListupCPV(r)!==null?computeListupCPV(r).toFixed(2):'-';
+    const grade=gradeFromCPV(computeListupCPV(r));
     return `<tr>
     <td data-ri="${i}" data-ci="0" style="padding:4px;text-align:center;color:#9ca3af;font-size:11px;border:0.5px solid #e5e7eb;background:#f9fafb">${i+1}</td>
     <td data-ri="${i}" data-ci="1" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.agency||''}" placeholder="자동입력" oninput="bookingManualRows[${i}].agency=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent"></td>
@@ -1134,8 +1135,8 @@ function renderManualTable(){
   if(!manualRows.length){tbody.innerHTML=`<tr><td colspan="10" style="padding:16px;text-align:center;color:var(--color-text-tertiary);font-size:12px">행을 추가하거나 엑셀에서 Ctrl+V로 붙여넣기 하세요</td></tr>`;return;}
   const autoStyle='background:#f9fafb;color:var(--color-text-secondary)';
   tbody.innerHTML=manualRows.map((r,i)=>{
-    const cpv=(r.price>0&&r.views>0)?(r.price/r.views).toFixed(2):'-';
-    const grade=gradeFromCPV(r.price>0&&r.views>0?r.price/r.views:null);
+    const cpv=computeListupCPV(r)!==null?computeListupCPV(r).toFixed(2):'-';
+    const grade=gradeFromCPV(computeListupCPV(r));
     return `<tr>
     <td data-ri="${i}" data-ci="0" style="padding:4px;text-align:center;color:#9ca3af;font-size:11px;border:0.5px solid #e5e7eb;background:#f9fafb">${i+1}</td>
     <td data-ri="${i}" data-ci="1" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.agency||''}" placeholder="자동입력" oninput="manualRows[${i}].agency=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent"></td>
