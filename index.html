@@ -697,6 +697,9 @@ function focusBookingManualCell(ri,ci){
 function generateBookingManualKakao(){
   const rows=bookingManualRows.filter(r=>r.agency&&r.channel);
   if(!rows.length){alert('업체명과 채널명을 입력해주세요.');return;}
+  if(confirmedCombos.length>0){
+    alert('리스트업 연동탭과 수동탭 모두 채워져 있어요.\n소재배정 연동란은 하나만 쓸 수 있으니,\n둘 중 하나를 먼저 삭제해주세요.');return;
+  }
   const byAgency={};
   rows.forEach(r=>{
     const dateKey=r.date||'날짜미정';
@@ -716,6 +719,7 @@ function generateBookingManualKakao(){
     const safeId=agency.replace(/[^a-zA-Z0-9가-힣]/g,'_')+'_bm';
     return `<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:600;color:var(--color-text-primary);margin-bottom:8px">${agency}</div><textarea id="kakao-text-${safeId}" class="kakao-editable">${msg}</textarea><button class="copy-btn" onclick="copyKakao('kakao-text-${safeId}')"><i class="ti ti-copy" style="font-size:13px"></i> 복사</button></div>`;
   }).join('');
+  renderLinkedSchedule();
 }
 function switchMatSubTab(tab){
   document.getElementById('mat-panel-linked').style.display=tab==='linked'?'':'none';
@@ -832,25 +836,32 @@ function getPrevDate(dateStr){const d=new Date(dateStr);d.setDate(d.getDate()-1)
 
 function getLinkedSlots(){
   const slots=[];
-  confirmedCombos.forEach(combo=>{
-    combo.channels.forEach(ch=>{
-      slots.push({date:combo.date||'',agency:ch.agency,channel:ch.channel,format:ch.format,comboId:combo.id,comboName:combo.name});
+  if(confirmedCombos.length){
+    confirmedCombos.forEach(combo=>{
+      combo.channels.forEach(ch=>{
+        slots.push({date:combo.date||'',agency:ch.agency,channel:ch.channel,format:ch.format,comboId:combo.id,comboName:combo.name});
+      });
     });
-  });
+  } else {
+    bookingManualRows.filter(r=>r.date&&r.channel).forEach(r=>{
+      slots.push({date:r.date,agency:r.agency||'',channel:r.channel,format:r.format||'릴스'});
+    });
+  }
   return slots;
 }
 
 function getManualSlots(){
   return manualRows.filter(r=>r.date&&r.channel).map(r=>{
     const ch=channelDB.find(c=>c.channel===r.channel);
-    return{date:r.date,agency:r.agency||ch?.agency||'',channel:r.channel,format:ch?.format||'릴스'};
+    return{date:r.date,agency:r.agency||ch?.agency||'',channel:r.channel,format:r.format||ch?.format||'릴스'};
   });
 }
 
 function renderLinkedSchedule(){
   const el=document.getElementById('linked-schedule-area');
   if(!el)return;
-  if(!confirmedCombos.length){el.innerHTML='<div style="font-size:13px;color:var(--color-text-tertiary)">채널 리스트업에서 조합을 확정하면 자동으로 표시돼요.</div>';return;}
+  const manualLinked=bookingManualRows.filter(r=>r.date&&r.channel);
+  if(!confirmedCombos.length&&!manualLinked.length){el.innerHTML='<div style="font-size:13px;color:var(--color-text-tertiary)">채널 리스트업에서 조합을 확정하거나, 부킹자동화 수동탭에서 업체별 문안 생성을 누르면 표시돼요.</div>';return;}
   const slots=getLinkedSlots();
   el.innerHTML=`<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px">총 ${slots.length}개 슬롯</div><div style="overflow-x:auto"><table style="font-size:12px;border-collapse:collapse;min-width:400px"><thead><tr style="background:#f9fafb"><th style="padding:5px 8px;border:0.5px solid #e5e7eb">날짜</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">업체명</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">채널명</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">포맷</th></tr></thead><tbody>${slots.map(s=>`<tr><td style="padding:5px 8px;border:0.5px solid #e5e7eb">${normDate(s.date)||'미정'}</td><td style="padding:5px 8px;border:0.5px solid #e5e7eb">${s.agency}</td><td style="padding:5px 8px;border:0.5px solid #e5e7eb;font-weight:500">${s.channel}</td><td style="padding:5px 8px;border:0.5px solid #e5e7eb"><span class="badge ${s.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${s.format}</span></td></tr>`).join('')}</tbody></table></div>`;
 }
