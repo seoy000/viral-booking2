@@ -751,12 +751,22 @@ async function handleDropboxLink(){
   const btn=input.nextElementSibling;
   btn.textContent='가져오는 중...';btn.disabled=true;
   try{
-    let directUrl=url.replace('www.dropbox.com','dl.dropboxusercontent.com').replace(/[?&]dl=0/,'').replace(/[?&]dl=1/,'');
-    directUrl+=(directUrl.includes('?')?'&':'?')+'dl=1';
+    const isFolder=/\/scl\/fo\/|\/sh\//.test(url);
+    let directUrl;
+    if(isFolder){
+      // 폴더 링크는 도메인을 바꾸지 않고 dl=1만 붙여야 드롭박스가 폴더 전체를 zip으로 만들어 내려준다
+      directUrl=url.replace(/[?&]dl=0/,'').replace(/[?&]dl=1/,'');
+      directUrl+=(directUrl.includes('?')?'&':'?')+'dl=1';
+    }else{
+      // 파일 링크는 dl.dropboxusercontent.com CDN 주소로 바꿔서 바로 받는다
+      directUrl=url.replace('www.dropbox.com','dl.dropboxusercontent.com').replace(/[?&]dl=0/,'').replace(/[?&]dl=1/,'');
+      directUrl+=(directUrl.includes('?')?'&':'?')+'dl=1';
+    }
     const resp=await fetch(directUrl);
     if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
     const blob=await resp.blob();
-    const filename=url.split('/').filter(Boolean).pop().split('?')[0]||'dropbox.zip';
+    let filename=url.split('/').filter(Boolean).pop().split('?')[0]||'dropbox.zip';
+    if(isFolder)filename='dropbox_folder'; // 폴더는 파일명이 링크에 없으므로 고정값 사용
     const file=new File([blob],filename.endsWith('.zip')?filename:filename+'.zip',{type:'application/zip'});
     await handleZipUpload([file]);
     input.value='';
