@@ -614,7 +614,7 @@ function renderHistoryTab(){
     </div>`;
   }).join('');
 }
-function generateKakao(){if(!confirmedCombos.length)return;const byAgency={};confirmedCombos.forEach(combo=>{const dateKey=combo.date||'날짜미정';combo.channels.forEach(ch=>{if(!byAgency[ch.agency])byAgency[ch.agency]={};if(!byAgency[ch.agency][dateKey])byAgency[ch.agency][dateKey]=[];byAgency[ch.agency][dateKey].push({channel:ch.channel,format:ch.format});});});const parseDate=d=>{if(!d||d==='날짜미정')return null;const s=d.toString().replace(/[-./]/g,'');if(s.length===8){return new Date(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8));}return new Date(d);};const fmtDate=(d)=>{if(d==='날짜미정')return d;const dt=parseDate(d);return dt&&!isNaN(dt)?dt.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',weekday:'short'}):d;};document.getElementById('kakao-area').innerHTML=Object.entries(byAgency).map(([agency,byDate])=>{const allChs=Object.values(byDate).flat();const hasR=allChs.some(c=>c.format==='릴스'),hasB=allChs.some(c=>c.format==='배너');const fmtText=hasR&&hasB?'릴스/배너':hasR?'릴스':'배너';const sortedDates=Object.keys(byDate).filter(d=>d!=='날짜미정').sort();const dateRange=sortedDates.length>=2?`${fmtDate(sortedDates[0])},${fmtDate(sortedDates[sortedDates.length-1])}`:sortedDates.length===1?fmtDate(sortedDates[0]):'날짜미정';const dateLines=sortedDates.map(d=>`${fmtDate(d)}\n${byDate[d].map(c=>`${c.channel} (${c.format})`).join('\n')}`).join('\n\n');const msg=`담당자님, 안녕하세요!\n효율 좋은 시간대에 하기 사항으로 업로드 가능한 일정 있을지 문의드립니다:)\n\n${dateLines}`;const safeId=agency.replace(/[^a-zA-Z0-9가-힣]/g,'_');return `<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:600;color:var(--color-text-primary);margin-bottom:8px">${agency}</div><textarea id="kakao-text-${safeId}" class="kakao-editable">${msg}</textarea><button class="copy-btn" onclick="copyKakao('kakao-text-${safeId}')"><i class="ti ti-copy" style="font-size:13px"></i> 복사</button></div>`;}).join('');}
+function generateKakao(){if(!confirmedCombos.length)return;const byAgency={};confirmedCombos.forEach(combo=>{const dateKey=combo.date||'날짜미정';combo.channels.forEach(ch=>{if(!byAgency[ch.agency])byAgency[ch.agency]={};if(!byAgency[ch.agency][dateKey])byAgency[ch.agency][dateKey]=[];byAgency[ch.agency][dateKey].push({channel:ch.channel,format:ch.format});});});const parseDate=d=>{if(!d||d==='날짜미정')return null;const norm=normDate(d);const m=norm.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?new Date(+m[1],+m[2]-1,+m[3]):null;};const fmtDate=(d)=>{if(d==='날짜미정')return d;const dt=parseDate(d);return dt&&!isNaN(dt)?dt.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',weekday:'short'}):d;};document.getElementById('kakao-area').innerHTML=Object.entries(byAgency).map(([agency,byDate])=>{const allChs=Object.values(byDate).flat();const hasR=allChs.some(c=>c.format==='릴스'),hasB=allChs.some(c=>c.format==='배너');const fmtText=hasR&&hasB?'릴스/배너':hasR?'릴스':'배너';const sortedDates=Object.keys(byDate).filter(d=>d!=='날짜미정').sort();const dateRange=sortedDates.length>=2?`${fmtDate(sortedDates[0])},${fmtDate(sortedDates[sortedDates.length-1])}`:sortedDates.length===1?fmtDate(sortedDates[0]):'날짜미정';const dateLines=sortedDates.map(d=>`${fmtDate(d)}\n${byDate[d].map(c=>`${c.channel} (${c.format})`).join('\n')}`).join('\n\n');const msg=`담당자님, 안녕하세요!\n효율 좋은 시간대에 하기 사항으로 업로드 가능한 일정 있을지 문의드립니다:)\n\n${dateLines}`;const safeId=agency.replace(/[^a-zA-Z0-9가-힣]/g,'_');return `<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:600;color:var(--color-text-primary);margin-bottom:8px">${agency}</div><textarea id="kakao-text-${safeId}" class="kakao-editable">${msg}</textarea><button class="copy-btn" onclick="copyKakao('kakao-text-${safeId}')"><i class="ti ti-copy" style="font-size:13px"></i> 복사</button></div>`;}).join('');}
 function copyKakao(id){const el=document.getElementById(id);if(!el)return;navigator.clipboard.writeText(el.value).then(()=>{const btn=el.nextElementSibling;btn.innerHTML='<i class="ti ti-check" style="font-size:13px"></i> 복사됨';setTimeout(()=>btn.innerHTML='<i class="ti ti-copy" style="font-size:13px"></i> 복사',2000);});}
 function normalize(name){return name.replace(/\.[^.]+$/,'').replace(/[\s_]*\d+\s*$/,'').replace(/\s+/g,' ').trim().toLowerCase();}
 function normalizeCh(ch){return(ch.channel+'_'+ch.format).toLowerCase();}
@@ -664,7 +664,7 @@ function renderBookingManualTable(){
     return `<tr>
     <td data-ri="${i}" data-ci="0" style="padding:4px;text-align:center;color:#9ca3af;font-size:11px;border:0.5px solid #e5e7eb;background:#f9fafb">${i+1}</td>
     <td data-ri="${i}" data-ci="1" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.agency||''}" placeholder="자동입력" oninput="bookingManualRows[${i}].agency=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent"></td>
-    <td data-ri="${i}" data-ci="2" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.format||''}" placeholder="릴스/배너" oninput="if(!event.isComposing)autoCompleteFormat(this,bookingManualRows,${i},renderBookingManualTable)" oncompositionend="autoCompleteFormat(this,bookingManualRows,${i},renderBookingManualTable)" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:60px;background:transparent"></td>
+    <td data-ri="${i}" data-ci="2" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.format||''}" placeholder="릴스/배너" oninput="liveFormatUpdate(this,bookingManualRows,${i},'booking-manual-body')" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:60px;background:transparent"></td>
     <td data-ri="${i}" data-ci="3" style="padding:4px 6px;border:0.5px solid #e5e7eb;${autoStyle};text-align:center">${r.agency?`<span class="badge ${badgeClass(grade)}">${grade}</span>`:''}</td>
     <td data-ri="${i}" data-ci="4" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.channel||''}" placeholder="채널명 입력" oninput="bookingManualRows[${i}].channel=this.value;autoFillRow(bookingManualRows,${i},renderBookingManualTable,'booking-manual-table')" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:90px;background:transparent;font-weight:500"></td>
     <td data-ri="${i}" data-ci="5" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.price>0?Number(r.price).toLocaleString():''}" placeholder="자동입력" oninput="bookingManualRows[${i}].price=parseInt(this.value.replace(/,/g,''))||0" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent"></td>
@@ -708,7 +708,7 @@ function generateBookingManualKakao(){
     if(!byAgency[r.agency][dateKey])byAgency[r.agency][dateKey]=[];
     byAgency[r.agency][dateKey].push({channel:r.channel,format:r.format||''});
   });
-  const parseDate=d=>{if(!d||d==='날짜미정')return null;const s=d.toString().replace(/[-./]/g,'');if(s.length===8){return new Date(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8));}return new Date(d);};
+  const parseDate=d=>{if(!d||d==='날짜미정')return null;const norm=normDate(d);const m=norm.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?new Date(+m[1],+m[2]-1,+m[3]):null;};
   const fmtDate=(d)=>{if(d==='날짜미정')return d;const dt=parseDate(d);return dt&&!isNaN(dt)?dt.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',weekday:'short'}):d;};
   document.getElementById('booking-manual-kakao-area').innerHTML=Object.entries(byAgency).map(([agency,byDate])=>{
     const sortedDates=Object.keys(byDate).filter(d=>d!=='날짜미정').sort();
@@ -834,10 +834,14 @@ function normDate(v){
   if(!v)return'';
   const s=String(v).trim();
   if(/^\d{8}$/.test(s))return`${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`;
+  const currentYear=new Date().getFullYear();
+  if(/^\d{4}$/.test(s))return`${currentYear}-${s.slice(0,2)}-${s.slice(2,4)}`;
   const m1=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
   if(m1)return`${m1[1]}-${m1[2].padStart(2,'0')}-${m1[3].padStart(2,'0')}`;
   const m2=s.match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/);
   if(m2)return`${m2[1]}-${m2[2].padStart(2,'0')}-${m2[3].padStart(2,'0')}`;
+  const m3=s.match(/^(\d{1,2})[-\/.](\d{1,2})$/);
+  if(m3)return`${currentYear}-${m3[1].padStart(2,'0')}-${m3[2].padStart(2,'0')}`;
   const d=new Date(s);
   if(!isNaN(d.getTime()))return d.toISOString().slice(0,10);
   return s;
@@ -847,17 +851,14 @@ function getPrevDate(dateStr){const d=new Date(dateStr);d.setDate(d.getDate()-1)
 
 function getLinkedSlots(){
   const slots=[];
-  if(confirmedCombos.length){
-    confirmedCombos.forEach(combo=>{
-      combo.channels.forEach(ch=>{
-        slots.push({date:combo.date||'',agency:ch.agency,channel:ch.channel,format:ch.format,comboId:combo.id,comboName:combo.name});
-      });
+  confirmedCombos.forEach(combo=>{
+    combo.channels.forEach(ch=>{
+      slots.push({date:combo.date||'',agency:ch.agency,channel:ch.channel,format:ch.format,comboId:combo.id,comboName:combo.name});
     });
-  } else {
-    bookingManualRows.filter(r=>r.date&&r.channel).forEach(r=>{
-      slots.push({date:r.date,agency:r.agency||'',channel:r.channel,format:r.format||'릴스'});
-    });
-  }
+  });
+  bookingManualRows.filter(r=>r.date&&r.channel).forEach(r=>{
+    slots.push({date:r.date,agency:r.agency||'',channel:r.channel,format:r.format||'릴스'});
+  });
   return slots;
 }
 
@@ -1112,12 +1113,36 @@ function saveToHistory(mode){
   alert('부킹 내역에 저장됐어요!');
 }
 
-function autoCompleteFormat(input,rowsArr,i,renderFn){
+function updateComputedCells(rowsArr,i,tbodyId){
+  const tbody=document.getElementById(tbodyId);
+  if(!tbody)return;
+  const r=rowsArr[i];
+  const cpvVal=computeListupCPV(r);const cpv=cpvVal!==null?cpvVal.toFixed(2):'-';
+  const grade=gradeFromCPV(cpvVal);
+  const useExp=r.expectedViews>0;const dispViews=useExp?r.expectedViews:(r.views||0);
+  const expColor=useExp?'#2563eb':'';
+  const cell=ci=>tbody.querySelector(`td[data-ri="${i}"][data-ci="${ci}"]`);
+  const ac=cell(1);if(ac){const inp=ac.querySelector('input');if(inp)inp.value=r.agency||'';}
+  const gc=cell(3);if(gc)gc.innerHTML=r.agency?`<span class="badge ${badgeClass(grade)}">${grade}</span>`:'';
+  const pc=cell(5);if(pc){const inp=pc.querySelector('input');if(inp)inp.value=r.price>0?Number(r.price).toLocaleString():'';}
+  const vc=cell(6);if(vc){const inp=vc.querySelector('input');if(inp){inp.value=dispViews>0?Number(dispViews).toLocaleString():'';inp.style.color=expColor;inp.style.fontWeight=useExp?'500':'';}}
+  const cc=cell(7);if(cc){cc.textContent=cpv;cc.style.color=expColor;cc.style.fontWeight=useExp?'500':'';}
+}
+function liveFormatUpdate(input,rowsArr,i,tbodyId){
   const v=input.value;
-  if(v.startsWith('배')||v.startsWith('ㅂ')||v.startsWith('b')||v.startsWith('B')){rowsArr[i].format='배너';input.value='배너';}
-  else if(v.startsWith('릴')||v.startsWith('ㄹ')||v.startsWith('r')||v.startsWith('R')){rowsArr[i].format='릴스';input.value='릴스';}
-  else{rowsArr[i].format=v;}
-  if(rowsArr[i].channel)autoFillRow(rowsArr,i,renderFn);else renderFn();
+  let newFormat=null;
+  if(v.startsWith('배')||v.startsWith('ㅂ')||v.startsWith('b')||v.startsWith('B'))newFormat='배너';
+  else if(v.startsWith('릴')||v.startsWith('ㄹ')||v.startsWith('r')||v.startsWith('R'))newFormat='릴스';
+  rowsArr[i].format=newFormat||v;
+  if(!newFormat)return;
+  if(input.value!==newFormat)input.value=newFormat;
+  const name=rowsArr[i].channel;
+  if(name&&channelDB.length){
+    const norm=n=>n.replace(/\(.*?\)/g,'').toLowerCase().replace(/[\s_\-\.]/g,'');
+    const ch=channelDB.find(r=>r.format===newFormat&&norm(r.channel)===norm(name));
+    if(ch){rowsArr[i].agency=ch.agency;rowsArr[i].price=ch.price;rowsArr[i].views=ch.views;rowsArr[i].expectedViews=ch.expectedViews||0;}
+  }
+  updateComputedCells(rowsArr,i,tbodyId);
 }
 function flushTableInputs(rowsArr,tableId){
   const tbody=document.getElementById(tableId)?.querySelector('tbody');
@@ -1143,8 +1168,18 @@ function autoFillRow(rowsArr,i,renderFn,tableId){
   if(!name||!channelDB.length)return;
   const norm=n=>n.replace(/\(.*?\)/g,'').toLowerCase().replace(/[\s_\-\.]/g,'');
   const fmt=rowsArr[i].format;
-  const ch=channelDB.find(r=>(fmt?r.format===fmt:true)&&norm(r.channel)===norm(name))
-    ||channelDB.find(r=>norm(r.channel)===norm(name));
+  if(!fmt){
+    // 포맷을 아직 안 정했으면 조회수/단가/CPV는 비워두고, 업체명만 (겹치지 않을 때) 참고로 채워줌
+    const matches=channelDB.filter(r=>norm(r.channel)===norm(name));
+    if(!matches.length)return;
+    if(tableId)flushTableInputs(rowsArr,tableId);
+    rowsArr[i].price=0;rowsArr[i].views=0;rowsArr[i].expectedViews=0;
+    const uniqueAgencies=[...new Set(matches.map(m=>m.agency))];
+    rowsArr[i].agency=uniqueAgencies.length===1?uniqueAgencies[0]:'';
+    renderFn();
+    return;
+  }
+  const ch=channelDB.find(r=>r.format===fmt&&norm(r.channel)===norm(name));
   if(!ch)return;
   if(tableId)flushTableInputs(rowsArr,tableId);
   rowsArr[i].agency=ch.agency;
@@ -1168,7 +1203,7 @@ function renderManualTable(){
     return `<tr>
     <td data-ri="${i}" data-ci="0" style="padding:4px;text-align:center;color:#9ca3af;font-size:11px;border:0.5px solid #e5e7eb;background:#f9fafb">${i+1}</td>
     <td data-ri="${i}" data-ci="1" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.agency||''}" placeholder="자동입력" oninput="manualRows[${i}].agency=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent"></td>
-    <td data-ri="${i}" data-ci="2" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.format||''}" placeholder="릴스/배너" oninput="if(!event.isComposing)autoCompleteFormat(this,manualRows,${i},renderManualTable)" oncompositionend="autoCompleteFormat(this,manualRows,${i},renderManualTable)" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:60px;background:transparent"></td>
+    <td data-ri="${i}" data-ci="2" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.format||''}" placeholder="릴스/배너" oninput="liveFormatUpdate(this,manualRows,${i},'manual-schedule-body')" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:60px;background:transparent"></td>
     <td data-ri="${i}" data-ci="3" style="padding:4px 6px;border:0.5px solid #e5e7eb;${autoStyle};text-align:center">${r.agency?`<span class="badge ${badgeClass(grade)}">${grade}</span>`:''}</td>
     <td data-ri="${i}" data-ci="4" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.channel||''}" placeholder="채널명 입력" oninput="manualRows[${i}].channel=this.value;autoFillRow(manualRows,${i},renderManualTable,'manual-schedule-table')" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:90px;background:transparent;font-weight:500"></td>
     <td data-ri="${i}" data-ci="5" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.price>0?Number(r.price).toLocaleString():''}" placeholder="자동입력" oninput="manualRows[${i}].price=parseInt(this.value.replace(/,/g,''))||0" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent"></td>
