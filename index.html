@@ -784,7 +784,7 @@ async function handleZipUpload(files){
   for(const file of fileArr){
     try{
       const zip=await JSZip.loadAsync(file);
-      const mother={id:Date.now()+Math.random(),zipName:file.name,videos:[],coverImages:[],sideImages:[],caption:'',dateRestrict:'',channelRestrict:''};
+      const mother={id:Date.now()+Math.random(),zipName:file.name,videos:[],coverImages:[],sideImages:[],caption:'',dateRestrict:'',channelRestrict:'',rangeStart:'',rangeEnd:''};
       for(const[path,zipEntry]of Object.entries(zip.files)){
         if(zipEntry.dir)continue;
         const name=path.split('/').pop();
@@ -807,6 +807,19 @@ async function handleZipUpload(files){
   renderMotherCards();
 }
 
+function randomizeThumbSecs(mi){
+  const m=mothers[mi];
+  if(!m)return;
+  const start=parseInt(m.rangeStart),end=parseInt(m.rangeEnd);
+  if(!start||!end||start<1||end<start){alert('구간을 올바르게 입력해주세요 (예: 시작 3, 끝 15).');return;}
+  const rangeSize=end-start+1;
+  if(rangeSize<m.videos.length){alert(`구간(${rangeSize}개 초)이 영상 개수(${m.videos.length}개)보다 좁아요. 구간을 넓혀주세요.`);return;}
+  const pool=[];
+  for(let s=start;s<=end;s++)pool.push(s);
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  m.videos.forEach((v,vi)=>{v.thumbSec=pool[vi];});
+  renderMotherCards();
+}
 function deleteMother(mi){mothers.splice(mi,1);renderMotherCards();}
 
 function renderMotherCards(){
@@ -820,7 +833,15 @@ function renderMotherCards(){
         <button onclick="deleteMother(${mi})" class="del-btn">삭제</button>
       </div>
       <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:10px">영상 ${m.videos.length}개 · 표지 ${m.coverImages.length}개 · 속지 ${m.sideImages.length}개</div>
-      ${m.videos.length?`<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);margin-bottom:5px">🎬 썸네일 초수 (영상별 입력)</div>${m.videos.map((v,vi)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.file.name}</span><input type="number" placeholder="초" min="1" value="${v.thumbSec}" onchange="mothers[${mi}].videos[${vi}].thumbSec=this.value" style="width:64px;font-size:12px;padding:3px 6px;border-radius:4px;border:0.5px solid var(--color-border-secondary);text-align:center"> <span style="font-size:11px;color:var(--color-text-tertiary)">초</span></div>`).join('')}</div>`:''}
+      ${m.videos.length?`<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);margin-bottom:5px">🎬 썸네일 초수 (영상별 입력)</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding:8px;background:var(--color-background-secondary);border-radius:6px">
+          <span style="font-size:11px;color:var(--color-text-secondary)">구간</span>
+          <input type="number" placeholder="시작초" min="1" value="${m.rangeStart}" onchange="mothers[${mi}].rangeStart=this.value" style="width:64px;font-size:12px;padding:3px 6px;border-radius:4px;border:0.5px solid var(--color-border-secondary);text-align:center">
+          <span style="font-size:11px;color:var(--color-text-tertiary)">~</span>
+          <input type="number" placeholder="끝초" min="1" value="${m.rangeEnd}" onchange="mothers[${mi}].rangeEnd=this.value" style="width:64px;font-size:12px;padding:3px 6px;border-radius:4px;border:0.5px solid var(--color-border-secondary);text-align:center">
+          <button onclick="randomizeThumbSecs(${mi})" class="update-btn" style="font-size:11px;padding:4px 10px;margin-left:4px"><i class="ti ti-dice"></i> 랜덤 지정</button>
+        </div>
+        ${m.videos.map((v,vi)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.file.name}</span><input type="number" placeholder="초" min="1" value="${v.thumbSec}" onchange="mothers[${mi}].videos[${vi}].thumbSec=this.value" style="width:64px;font-size:12px;padding:3px 6px;border-radius:4px;border:0.5px solid var(--color-border-secondary);text-align:center"> <span style="font-size:11px;color:var(--color-text-tertiary)">초</span></div>`).join('')}</div>`:''}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
         <div><div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:3px">📅 지정 날짜 (쉼표 구분)</div><input type="text" placeholder="미입력 = 모든 날짜" value="${m.dateRestrict}" onchange="mothers[${mi}].dateRestrict=this.value" style="width:100%;font-size:12px;padding:5px 8px;border-radius:4px;border:0.5px solid var(--color-border-secondary)"></div>
         <div><div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:3px">📺 지정 채널 (쉼표 구분)</div><input type="text" placeholder="미입력 = 모든 채널" value="${m.channelRestrict}" onchange="mothers[${mi}].channelRestrict=this.value" style="width:100%;font-size:12px;padding:5px 8px;border-radius:4px;border:0.5px solid var(--color-border-secondary)"></div>
@@ -878,6 +899,14 @@ function renderLinkedSchedule(){
   el.innerHTML=`<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px">총 ${slots.length}개 슬롯</div><div style="overflow-x:auto"><table style="font-size:12px;border-collapse:collapse;min-width:400px"><thead><tr style="background:#f9fafb"><th style="padding:5px 8px;border:0.5px solid #e5e7eb">날짜</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">업체명</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">채널명</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">포맷</th></tr></thead><tbody>${slots.map(s=>`<tr><td style="padding:5px 8px;border:0.5px solid #e5e7eb">${normDate(s.date)||'미정'}</td><td style="padding:5px 8px;border:0.5px solid #e5e7eb">${s.agency}</td><td style="padding:5px 8px;border:0.5px solid #e5e7eb;font-weight:500">${s.channel}</td><td style="padding:5px 8px;border:0.5px solid #e5e7eb"><span class="badge ${s.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${s.format}</span></td></tr>`).join('')}</tbody></table></div>`;
 }
 
+function getChannelGrade(channel,format){
+  const norm=n=>n.replace(/\(.*?\)/g,'').toLowerCase().replace(/[\s_\-\.]/g,'');
+  const ch=channelDB.find(r=>r.format===format&&norm(r.channel)===norm(channel));
+  if(!ch)return '하';
+  const cpv=computeListupCPV(ch);
+  const g=gradeFromCPV(cpv);
+  return g==='상'||g==='중'?g:'하';
+}
 function runAssignment(mode){
   const slots=mode==='linked'?getLinkedSlots():getManualSlots();
   if(!slots.length){alert('스케줄이 없어요.');return;}
@@ -887,32 +916,51 @@ function runAssignment(mode){
   const dupKeys=slotKeys.filter((k,i)=>slotKeys.indexOf(k)!==i);
   if(dupKeys.length){alert(`중복 스케줄이 있어요:\n${[...new Set(dupKeys)].join('\n')}`);return;}
   const pools=mothers.map(m=>({id:m.id,zipName:m.zipName,caption:m.caption,dateRestrict:m.dateRestrict,channelRestrict:m.channelRestrict,videos:[...m.videos.map(v=>({...v}))],coverImages:[...m.coverImages.map(f=>({...f}))],sideImages:[...m.sideImages]}));
-  const assignments=[],conflicts=[],channelLastMother={};
+  const assignments=[],conflicts=[];
+  const channelUsedMothers={}; // 채널별로 이미 쓴 마더ID들 — 이 채널엔 절대 다시 못 씀
+  const motherGradeCount={};
+  pools.forEach(p=>motherGradeCount[p.id]={'상':0,'중':0,'하':0});
   const sorted=[...slots].sort((a,b)=>normDate(a.date).localeCompare(normDate(b.date)));
+  sorted.forEach(s=>{s.grade=getChannelGrade(s.channel,s.format);});
   for(const slot of sorted){
     const dn=normDate(slot.date);
     const isReels=slot.format==='릴스';
-    const eligible=pools.filter(p=>{
+    const usedSet=channelUsedMothers[slot.channel]||new Set();
+    const baseEligible=pools.filter(p=>{
+      if(usedSet.has(p.id))return false; // 같은 채널엔 같은 마더 절대 재사용 금지
+      return isReels?p.videos.length>0:p.coverImages.length>0;
+    });
+    let isConflict=false;
+    let eligible=baseEligible.filter(p=>{
       if(p.dateRestrict){const allowed=p.dateRestrict.split(',').map(d=>normDate(d.trim()));if(!allowed.includes(dn))return false;}
       if(p.channelRestrict){const allowed=p.channelRestrict.split(',').map(c=>c.trim());if(!allowed.includes(slot.channel))return false;}
-      if(isReels)return p.videos.length>0;
-      return p.coverImages.length>0;
+      return true;
     });
-    let chosen=null,isConflict=false;
-    if(eligible.length){
-      const prevDn=getPrevDate(dn);
-      const prevId=channelLastMother[`${slot.channel}__${prevDn}`];
-      chosen=eligible.find(p=>p.id!==prevId)||eligible[0];
-      if(chosen.id===prevId&&prevId)conflicts.push({type:'consecutive',desc:`${slot.channel} (${dn}): 연달은 날짜 같은 마더 사용`});
-    }else{
-      const fallback=pools.find(p=>isReels?p.videos.length>0:p.coverImages.length>0);
-      if(fallback){chosen=fallback;isConflict=true;conflicts.push({type:'lock_ignored',desc:`${slot.channel} (${dn}): 날짜/채널 lock 무시 배정`});}
-      else{assignments.push({...slot,dateNorm:dn,assigned:false});conflicts.push({type:'no_material',desc:`${slot.channel} (${dn}): 소재 부족 — 배정 실패`});continue;}
+    if(!eligible.length&&baseEligible.length){
+      eligible=baseEligible;
+      isConflict=true;
+      conflicts.push({type:'lock_ignored',desc:`${slot.channel} (${dn}): 날짜/채널 lock 무시 배정`});
     }
+    if(!eligible.length){
+      assignments.push({...slot,dateNorm:dn,assigned:false});
+      conflicts.push({type:'no_material',desc:`${slot.channel} (${dn}): 소재 부족 또는 사용 가능한 마더 없음 — 배정 실패`});
+      continue;
+    }
+    // 효율 등급 균형: 이 슬롯 등급을 가장 적게 받은 마더 우선, 동률이면 총 배정 수 적은 마더 우선
+    eligible.sort((a,b)=>{
+      const ga=motherGradeCount[a.id][slot.grade],gb=motherGradeCount[b.id][slot.grade];
+      if(ga!==gb)return ga-gb;
+      const ta=motherGradeCount[a.id]['상']+motherGradeCount[a.id]['중']+motherGradeCount[a.id]['하'];
+      const tb=motherGradeCount[b.id]['상']+motherGradeCount[b.id]['중']+motherGradeCount[b.id]['하'];
+      return ta-tb;
+    });
+    const chosen=eligible[0];
     let file=null,thumbSec='',sideFiles=[];
     if(isReels){const v=chosen.videos.shift();file=v.file;thumbSec=v.thumbSec;}
     else{file=chosen.coverImages.shift().file;sideFiles=chosen.sideImages.map(s=>s.file);}
-    channelLastMother[`${slot.channel}__${dn}`]=chosen.id;
+    if(!channelUsedMothers[slot.channel])channelUsedMothers[slot.channel]=new Set();
+    channelUsedMothers[slot.channel].add(chosen.id);
+    motherGradeCount[chosen.id][slot.grade]++;
     assignments.push({...slot,dateNorm:dn,motherId:chosen.id,motherName:chosen.zipName,file,thumbSec,sideFiles,caption:chosen.caption,isConflict,assigned:true});
   }
   pools.forEach(p=>{
@@ -1205,13 +1253,13 @@ function renderManualTable(){
     return `<tr>
     <td data-ri="${i}" data-ci="0" style="padding:4px;text-align:center;color:#9ca3af;font-size:11px;border:0.5px solid #e5e7eb;background:#f9fafb">${i+1}</td>
     <td data-ri="${i}" data-ci="1" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.agency||''}" placeholder="자동입력" oninput="manualRows[${i}].agency=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent"></td>
-    <td data-ri="${i}" data-ci="2" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.format||''}" placeholder="릴스/배너" oninput="liveFormatUpdate(this,manualRows,${i},'manual-schedule-body')" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:60px;background:transparent"></td>
+    <td data-ri="${i}" data-ci="2" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.format||''}" placeholder="릴스/배너" oninput="liveFormatUpdate(this,manualRows,${i},'manual-schedule-body')" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:60px;background:transparent;font-weight:500"></td>
     <td data-ri="${i}" data-ci="3" style="padding:4px 6px;border:0.5px solid #e5e7eb;${autoStyle};text-align:center">${r.agency?`<span class="badge ${badgeClass(grade)}">${grade}</span>`:''}</td>
     <td data-ri="${i}" data-ci="4" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.channel||''}" placeholder="채널명 입력" oninput="manualRows[${i}].channel=this.value;autoFillRow(manualRows,${i},renderManualTable,'manual-schedule-table')" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:90px;background:transparent;font-weight:500"></td>
     <td data-ri="${i}" data-ci="5" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.price>0?Number(r.price).toLocaleString():''}" placeholder="자동입력" oninput="manualRows[${i}].price=parseInt(this.value.replace(/,/g,''))||0" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent"></td>
     <td data-ri="${i}" data-ci="6" style="padding:0;border:0.5px solid #e5e7eb"><input value="${dispViews>0?Number(dispViews).toLocaleString():''}" placeholder="자동입력" oninput="manualRows[${i}].views=parseInt(this.value.replace(/,/g,''))||0" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent;${expColor}"></td>
     <td data-ri="${i}" data-ci="7" style="padding:4px 6px;border:0.5px solid #e5e7eb;${autoStyle};text-align:right;${expColor}">${cpv}</td>
-    <td data-ri="${i}" data-ci="8" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.date||''}" placeholder="0720" oninput="manualRows[${i}].date=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:90px;background:transparent"></td>
+    <td data-ri="${i}" data-ci="8" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.date||''}" placeholder="0720" oninput="manualRows[${i}].date=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:90px;background:transparent;font-weight:500"></td>
     <td data-ri="${i}" data-ci="9" style="padding:4px;text-align:center;border:0.5px solid #e5e7eb"><button onclick="deleteManualRow(${i})" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:14px">×</button></td>
   </tr>`;}).join('');
   const table=document.getElementById('manual-schedule-table');
