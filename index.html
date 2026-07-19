@@ -1218,6 +1218,25 @@ function renderManualTable(){
   if(table){table.classList.add('ss-table');ssAttach(table);}
 }
 
+function recomputeRowFromChannelDB(rowsArr,r){
+  const name=rowsArr[r].channel;
+  if(!name||!channelDB.length)return;
+  const norm=n=>n.replace(/\(.*?\)/g,'').toLowerCase().replace(/[\s_\-\.]/g,'');
+  const fmt=rowsArr[r].format;
+  if(fmt){
+    const ch=channelDB.find(x=>x.format===fmt&&norm(x.channel)===norm(name));
+    if(ch){rowsArr[r].agency=ch.agency;rowsArr[r].price=ch.price;rowsArr[r].views=ch.views;rowsArr[r].expectedViews=ch.expectedViews||0;}
+  }else{
+    const matches=channelDB.filter(x=>norm(x.channel)===norm(name));
+    if(matches.length){
+      rowsArr[r].views=0;rowsArr[r].expectedViews=0;
+      const uniqueAgencies=[...new Set(matches.map(m=>m.agency))];
+      rowsArr[r].agency=uniqueAgencies.length===1?uniqueAgencies[0]:'';
+      const uniquePrices=[...new Set(matches.map(m=>m.price))];
+      rowsArr[r].price=uniquePrices.length===1?uniquePrices[0]:0;
+    }
+  }
+}
 function selectAllManual(){
   if(!manualRows.length)return;
   const table=document.getElementById('manual-schedule-table');
@@ -1275,6 +1294,8 @@ function ssAttach(tableEl){
         const target=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('td[data-ri]');
         if(target&&+target.dataset.ri>maxR){
           const toRi=+target.dataset.ri;
+          const rowsArr=t.id==='booking-manual-table'?bookingManualRows:manualRows;
+          const affectedRows=new Set();
           for(let r=maxR+1;r<=toRi;r++){
             for(let c=minC;c<=maxC;c++){
               const srcCell=ssGetCell(t,maxR,c);
@@ -1286,12 +1307,18 @@ function ssAttach(tableEl){
                 dstInput.value=srcInput.value;
                 const fieldMap={1:'agency',2:'format',4:'channel',5:'price',6:'views',8:'date'};
                 const field=fieldMap[c];
-                if(field){
-                  const rowsArr=t.id==='booking-manual-table'?bookingManualRows:manualRows;
-                  if(rowsArr[r])rowsArr[r][field]=srcInput.value;
+                if(field&&rowsArr[r]){
+                  if(field==='price'||field==='views')rowsArr[r][field]=parseInt(String(srcInput.value).replace(/,/g,''))||0;
+                  else rowsArr[r][field]=srcInput.value;
+                  if(field==='channel'||field==='format')affectedRows.add(r);
                 }
               }
             }
+          }
+          affectedRows.forEach(r=>recomputeRowFromChannelDB(rowsArr,r));
+          if(affectedRows.size){
+            const renderFn=t.id==='booking-manual-table'?renderBookingManualTable:renderManualTable;
+            renderFn();
           }
         }
       };
