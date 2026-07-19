@@ -110,7 +110,7 @@ tr.res-drag-over td{background:#dbeafe !important;outline:2px solid #2563eb;outl
   <div class="tab-bar">
     <button class="tab active" onclick="switchTab('efficiency')"><i class="ti ti-chart-bar" style="margin-right:6px;font-size:14px"></i>채널 효율 관리</button>
     <button class="tab" onclick="switchTab('listup')"><i class="ti ti-list" style="margin-right:6px;font-size:14px"></i>채널 리스트업</button>
-    <button class="tab" onclick="switchTab('booking')"><i class="ti ti-calendar" style="margin-right:6px;font-size:14px"></i>부킹 자동화</button>
+    <button class="tab" onclick="switchTab('booking')"><i class="ti ti-calendar" style="margin-right:6px;font-size:14px"></i>업체별 부킹</button>
     <button class="tab" onclick="switchTab('material')"><i class="ti ti-folders" style="margin-right:6px;font-size:14px"></i>소재 배정</button>
     <button class="tab" onclick="switchTab('history')"><i class="ti ti-history" style="margin-right:6px;font-size:14px"></i>부킹 내역</button>
   </div>
@@ -153,8 +153,8 @@ tr.res-drag-over td{background:#dbeafe !important;outline:2px solid #2563eb;outl
     </div>
   </div>
   <div class="dash-grid">
-    <div class="dash-card"><div class="dash-label"><span class="badge badge-reels" style="font-size:10px;margin-right:4px">릴스</span>CPV 낮은 순 TOP 3</div><div id="top3-reels"><div style="font-size:12px;color:var(--color-text-tertiary)">데이터를 불러오면 표시돼요</div></div></div>
-    <div class="dash-card"><div class="dash-label"><span class="badge badge-banner" style="font-size:10px;margin-right:4px">배너</span>CPV 낮은 순 TOP 3</div><div id="top3-banner"><div style="font-size:12px;color:var(--color-text-tertiary)">데이터를 불러오면 표시돼요</div></div></div>
+    <div class="dash-card"><div class="dash-label"><span class="badge badge-reels" style="font-size:10px;margin-right:4px">릴스</span>예상조회수 TOP 3</div><div id="top3-reels"><div style="font-size:12px;color:var(--color-text-tertiary)">데이터를 불러오면 표시돼요</div></div></div>
+    <div class="dash-card"><div class="dash-label"><span class="badge badge-banner" style="font-size:10px;margin-right:4px">배너</span>예상조회수 TOP 3</div><div id="top3-banner"><div style="font-size:12px;color:var(--color-text-tertiary)">데이터를 불러오면 표시돼요</div></div></div>
     <div class="dash-card" style="display:flex;flex-direction:column;justify-content:center"><div class="dash-label">전체 채널</div><div class="dash-val" id="s-total">-</div></div>
   </div>
   <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:8px"><i class="ti ti-pencil" style="font-size:11px"></i> 셀을 클릭하면 바로 수정할 수 있어요</div>
@@ -276,7 +276,7 @@ tr.res-drag-over td{background:#dbeafe !important;outline:2px solid #2563eb;outl
   <div id="combo-list"></div>
 </div>
 
-<!-- 탭3: 부킹 자동화 -->
+<!-- 탭3: 업체별 부킹 -->
 <div id="tab-booking" class="panel">
   <!-- 서브탭 -->
   <div style="display:flex;gap:0;border-bottom:1px solid var(--color-border-tertiary);margin-bottom:16px">
@@ -457,7 +457,7 @@ function badgeClass(g){if(g==='상')return 'badge-up';if(g==='중')return 'badge
 function startTimer(){timerSeconds=0;document.getElementById('timer-area').innerHTML=`<span class="timer-badge"><i class="ti ti-clock pulsing" style="font-size:13px"></i> <span id="timer-count">0</span>초</span>`;timerInterval=setInterval(()=>{timerSeconds++;const el=document.getElementById('timer-count');if(el)el.textContent=timerSeconds;},1000);}
 function stopTimer(){clearInterval(timerInterval);timerInterval=null;document.getElementById('timer-area').innerHTML='';}
 function runUpdate(){if(timerInterval)return;const icon=document.getElementById('refresh-icon'),btn=document.getElementById('update-btn');icon.classList.add('spinning');btn.disabled=true;startTimer();(savedSheetUrl?syncSheets(savedSheetUrl):Promise.resolve()).then(()=>{channelDB.forEach(r=>{const base=r.views||50000;const s=Array.from({length:10},()=>base*(0.7+Math.random()*0.6));const med=[...s].sort((a,b)=>a-b)[4];const f=s.filter(v=>v<med*3);r.views=Math.round(f.reduce((a,b)=>a+b,0)/f.length);});document.getElementById('update-time').textContent='마지막 업데이트: '+new Date().toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});icon.classList.remove('spinning');btn.disabled=false;stopTimer();renderTable();updateStats();});}
-function renderTop3(elId,format){const medals=['🥇','🥈','🥉'];const top3=channelDB.filter(r=>r.format===format).map(r=>({...r,cpv:computeCPV(r)})).filter(r=>r.cpv!==null).sort((a,b)=>a.cpv-b.cpv).slice(0,3);document.getElementById(elId).innerHTML=top3.length?top3.map((r,i)=>`<div class="top3-row"><span style="font-size:11px;width:20px;flex-shrink:0">${medals[i]}</span><span class="top3-name">${r.channel}</span><span class="top3-cpv">${r.cpv.toFixed(2)}</span></div>`).join(''):'<div style="font-size:12px;color:var(--color-text-tertiary)">데이터 없음</div>';}
+function renderTop3(elId,format){const medals=['🥇','🥈','🥉'];const top3=channelDB.filter(r=>r.format===format&&r.expectedViews>0).sort((a,b)=>b.expectedViews-a.expectedViews).slice(0,3);document.getElementById(elId).innerHTML=top3.length?top3.map((r,i)=>`<div class="top3-row"><span style="font-size:11px;width:20px;flex-shrink:0">${medals[i]}</span><span class="top3-name">${r.channel}</span><span class="top3-cpv">${r.expectedViews.toLocaleString()}</span></div>`).join(''):'<div style="font-size:12px;color:var(--color-text-tertiary)">예상조회수 데이터 없음</div>';}
 function updateStats(){document.getElementById('s-total').textContent=channelDB.length;renderTop3('top3-reels','릴스');renderTop3('top3-banner','배너');}
 let effSortState={key:null,asc:true};
 function effSort(key){if(effSortState.key===key){effSortState.asc=!effSortState.asc;}else{effSortState.key=key;effSortState.asc=true;}document.querySelectorAll('[id^="eff-arr-"]').forEach(el=>{el.textContent='↕';el.style.color='#ccc';});const arr=document.getElementById('eff-arr-'+key);if(arr){arr.textContent=effSortState.asc?'↑':'↓';arr.style.color='#2563eb';}renderTable();}
@@ -597,9 +597,10 @@ function renderHistoryTab(){
         const dateStr=combo.date?new Date(combo.date).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',weekday:'short'}):'';
         const rowsHTML=combo.channels.map(r=>{
           const cpv=computeListupCPV(r),g=gradeFromCPV(cpv);
+          const useExp=r.expectedViews>0;const dispViews=useExp?r.expectedViews:(r.views||0);const expColor=useExp?'color:#2563eb':'';
           const slotKey=combo.id+'__'+r.channel+'__'+r.format;
           const assigned=assignments[slotKey];
-          return `<tr><td>${r.agency}</td><td><span class="badge ${r.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${r.format}</span></td><td><span class="badge ${badgeClass(g)}" style="font-size:10px">${g}</span></td><td style="font-weight:500">${r.channel}</td><td>${r.price.toLocaleString()}원</td><td>${(r.views||0).toLocaleString()}</td><td>${cpv?cpv.toFixed(2):'-'}</td><td style="font-size:11px;color:var(--color-text-info)">${assigned?`[${assigned.folder}]${assigned.key}`:'-'}</td></tr>`;
+          return `<tr><td>${r.agency}</td><td><span class="badge ${r.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${r.format}</span></td><td><span class="badge ${badgeClass(g)}" style="font-size:10px">${g}</span></td><td style="font-weight:500">${r.channel}</td><td>${r.price.toLocaleString()}원</td><td style="${expColor}">${dispViews.toLocaleString()}</td><td style="${expColor}">${cpv?cpv.toFixed(2):'-'}</td><td style="font-size:11px;color:var(--color-text-info)">${assigned?`[${assigned.folder}]${assigned.key}`:'-'}</td></tr>`;
         }).join('');
         return `<div class="booking-combo-card" style="margin-bottom:10px"><div class="booking-combo-header"><span style="font-weight:500;font-size:13px">${combo.name}</span><span style="font-size:12px;color:var(--color-text-secondary);margin-left:10px">${comboSummary(combo.channels)}</span>${dateStr?`<span style="font-size:12px;color:var(--color-text-secondary);margin-left:8px">${dateStr}</span>`:''}</div><table style="font-size:12px"><thead><tr><th>업체</th><th>포맷</th><th>효율</th><th>채널명</th><th>단가</th><th>평균 조회수</th><th>조회당 비용</th><th>배정 소재</th></tr></thead><tbody>${rowsHTML}</tbody></table></div>`;
       }).join('');
@@ -663,7 +664,7 @@ function renderBookingManualTable(){
     return `<tr>
     <td data-ri="${i}" data-ci="0" style="padding:4px;text-align:center;color:#9ca3af;font-size:11px;border:0.5px solid #e5e7eb;background:#f9fafb">${i+1}</td>
     <td data-ri="${i}" data-ci="1" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.agency||''}" placeholder="자동입력" oninput="bookingManualRows[${i}].agency=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent"></td>
-    <td data-ri="${i}" data-ci="2" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.format||''}" placeholder="릴스/배너" oninput="autoCompleteFormat(this,bookingManualRows,${i},renderBookingManualTable)" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:60px;background:transparent"></td>
+    <td data-ri="${i}" data-ci="2" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.format||''}" placeholder="릴스/배너" oninput="if(!event.isComposing)autoCompleteFormat(this,bookingManualRows,${i},renderBookingManualTable)" oncompositionend="autoCompleteFormat(this,bookingManualRows,${i},renderBookingManualTable)" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:60px;background:transparent"></td>
     <td data-ri="${i}" data-ci="3" style="padding:4px 6px;border:0.5px solid #e5e7eb;${autoStyle};text-align:center">${r.agency?`<span class="badge ${badgeClass(grade)}">${grade}</span>`:''}</td>
     <td data-ri="${i}" data-ci="4" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.channel||''}" placeholder="채널명 입력" oninput="bookingManualRows[${i}].channel=this.value;autoFillRow(bookingManualRows,${i},renderBookingManualTable,'booking-manual-table')" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:90px;background:transparent;font-weight:500"></td>
     <td data-ri="${i}" data-ci="5" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.price>0?Number(r.price).toLocaleString():''}" placeholder="자동입력" oninput="bookingManualRows[${i}].price=parseInt(this.value.replace(/,/g,''))||0" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent"></td>
@@ -871,7 +872,7 @@ function renderLinkedSchedule(){
   const el=document.getElementById('linked-schedule-area');
   if(!el)return;
   const manualLinked=bookingManualRows.filter(r=>r.date&&r.channel);
-  if(!confirmedCombos.length&&!manualLinked.length){el.innerHTML='<div style="font-size:13px;color:var(--color-text-tertiary)">채널 리스트업에서 조합을 확정하거나, 부킹자동화 수동탭에서 업체별 문안 생성을 누르면 표시돼요.</div>';return;}
+  if(!confirmedCombos.length&&!manualLinked.length){el.innerHTML='<div style="font-size:13px;color:var(--color-text-tertiary)">채널 리스트업에서 조합을 확정하거나, 업체별 부킹 수동탭에서 업체별 문안 생성을 누르면 표시돼요.</div>';return;}
   const slots=getLinkedSlots();
   el.innerHTML=`<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px">총 ${slots.length}개 슬롯</div><div style="overflow-x:auto"><table style="font-size:12px;border-collapse:collapse;min-width:400px"><thead><tr style="background:#f9fafb"><th style="padding:5px 8px;border:0.5px solid #e5e7eb">날짜</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">업체명</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">채널명</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">포맷</th></tr></thead><tbody>${slots.map(s=>`<tr><td style="padding:5px 8px;border:0.5px solid #e5e7eb">${normDate(s.date)||'미정'}</td><td style="padding:5px 8px;border:0.5px solid #e5e7eb">${s.agency}</td><td style="padding:5px 8px;border:0.5px solid #e5e7eb;font-weight:500">${s.channel}</td><td style="padding:5px 8px;border:0.5px solid #e5e7eb"><span class="badge ${s.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${s.format}</span></td></tr>`).join('')}</tbody></table></div>`;
 }
@@ -923,9 +924,11 @@ function runAssignment(mode){
 }
 
 let _matDragMode='',_matDragIdx=-1;
+let _resActiveTab={};
 
 function renderAssignmentResult(mode,result,activeTab){
-  activeTab=activeTab||'agency';
+  activeTab=activeTab||_resActiveTab[mode]||'agency';
+  _resActiveTab[mode]=activeTab;
   const el=document.getElementById(mode==='linked'?'linked-result':'manual-result');
   const{assignments,conflicts}=result;
   const byAgency={};
@@ -1023,7 +1026,7 @@ function resSwapMaterial(fromIdx,toIdx,mode){
   [from.motherName,to.motherName]=[to.motherName,from.motherName];
   [from.motherId,to.motherId]=[to.motherId,from.motherId];
   [from.sideFiles,to.sideFiles]=[to.sideFiles,from.sideFiles];
-  renderAssignmentResult(mode,result);
+  renderAssignmentResult(mode,result,_resActiveTab[mode]);
 }
 
 function resDragStart(event,fromIdx,mode){
@@ -1165,7 +1168,7 @@ function renderManualTable(){
     return `<tr>
     <td data-ri="${i}" data-ci="0" style="padding:4px;text-align:center;color:#9ca3af;font-size:11px;border:0.5px solid #e5e7eb;background:#f9fafb">${i+1}</td>
     <td data-ri="${i}" data-ci="1" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.agency||''}" placeholder="자동입력" oninput="manualRows[${i}].agency=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent"></td>
-    <td data-ri="${i}" data-ci="2" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.format||''}" placeholder="릴스/배너" oninput="autoCompleteFormat(this,manualRows,${i},renderManualTable)" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:60px;background:transparent"></td>
+    <td data-ri="${i}" data-ci="2" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.format||''}" placeholder="릴스/배너" oninput="if(!event.isComposing)autoCompleteFormat(this,manualRows,${i},renderManualTable)" oncompositionend="autoCompleteFormat(this,manualRows,${i},renderManualTable)" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:60px;background:transparent"></td>
     <td data-ri="${i}" data-ci="3" style="padding:4px 6px;border:0.5px solid #e5e7eb;${autoStyle};text-align:center">${r.agency?`<span class="badge ${badgeClass(grade)}">${grade}</span>`:''}</td>
     <td data-ri="${i}" data-ci="4" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.channel||''}" placeholder="채널명 입력" oninput="manualRows[${i}].channel=this.value;autoFillRow(manualRows,${i},renderManualTable,'manual-schedule-table')" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:90px;background:transparent;font-weight:500"></td>
     <td data-ri="${i}" data-ci="5" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.price>0?Number(r.price).toLocaleString():''}" placeholder="자동입력" oninput="manualRows[${i}].price=parseInt(this.value.replace(/,/g,''))||0" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent"></td>
