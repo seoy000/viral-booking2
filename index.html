@@ -153,6 +153,7 @@ tr.res-drag-over td{background:#dbeafe !important;outline:2px solid #2563eb;outl
     <div class="dash-card" style="display:flex;flex-direction:column;justify-content:center"><div class="dash-label">전체 채널</div><div class="dash-val" id="s-total">-</div></div>
   </div>
   <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:8px"><i class="ti ti-pencil" style="font-size:11px"></i> 셀을 클릭하면 바로 수정할 수 있어요</div>
+  <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:8px">📍 매주 월요일 오전 8시, 콘텐츠 대시보드 연동 시트를 참고해 예상조회수와 예상 CPV가 업데이트 돼요.</div>
   <div class="card" style="padding:0;overflow:hidden">
     <table><thead><tr id="eff-thead"><th onclick="effSort('agency')" style="cursor:pointer">업체명 <span id="eff-arr-agency" style="font-size:10px;color:#ccc">↕</span></th><th onclick="effSort('format')" style="cursor:pointer">포맷 <span id="eff-arr-format" style="font-size:10px;color:#ccc">↕</span></th><th onclick="effSort('grade')" style="cursor:pointer">효율 <span id="eff-arr-grade" style="font-size:10px;color:#ccc">↕</span></th><th onclick="effSort('channel')" style="cursor:pointer">채널명 <span id="eff-arr-channel" style="font-size:10px;color:#ccc">↕</span></th><th onclick="effSort('price')" style="cursor:pointer">단가 <span id="eff-arr-price" style="font-size:10px;color:#ccc">↕</span></th><th onclick="effSort('views')" style="cursor:pointer">평균 조회수 <span id="eff-arr-views" style="font-size:10px;color:#ccc">↕</span></th><th onclick="effSort('expectedViews')" style="cursor:pointer">예상 조회수 <span id="eff-arr-expectedViews" style="font-size:10px;color:#ccc">↕</span></th><th onclick="effSort('cpv')" style="cursor:pointer">CPV <span id="eff-arr-cpv" style="font-size:10px;color:#ccc">↕</span></th><th onclick="effSort('ecpv')" style="cursor:pointer">예상 CPV <span id="eff-arr-ecpv" style="font-size:10px;color:#ccc">↕</span></th></tr></thead>
     <tbody id="channel-tbody"><tr><td colspan="9" style="text-align:center;color:var(--color-text-tertiary);padding:32px">구글 시트를 연동하거나 샘플 데이터를 불러와주세요</td></tr></tbody></table>
@@ -335,6 +336,7 @@ tr.res-drag-over td{background:#dbeafe !important;outline:2px solid #2563eb;outl
   <!-- Step 1: 마더파일 업로드 (공통) -->
   <div class="card">
     <div class="section-title">① 마더파일 업로드 및 썸네일 초수 입력</div>
+    <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:8px">📍최대 약 1GB까지 안정적으로 업로드돼요 (그 이상은 나눠서 올려주세요)</div>
     <div id="zip-dropzone" style="border:2px dashed #d1d5db;border-radius:8px;padding:32px;text-align:center;cursor:pointer;background:#f9fafb;transition:all 0.2s" onclick="document.getElementById('zip-upload').click()" ondragover="event.preventDefault();document.getElementById('zip-dropzone').style.background='#eff6ff';document.getElementById('zip-dropzone').style.borderColor='#2563eb'" ondragleave="document.getElementById('zip-dropzone').style.background='#f9fafb';document.getElementById('zip-dropzone').style.borderColor='#d1d5db'" ondrop="handleZipDrop(event)">
       <i class="ti ti-upload" style="font-size:32px;color:#9ca3af"></i>
       <div style="font-size:13px;color:#6b7280;margin-top:8px">ZIP 압축파일을 드래그하거나 클릭해서 추가</div>
@@ -351,6 +353,7 @@ tr.res-drag-over td{background:#dbeafe !important;outline:2px solid #2563eb;outl
 
   <div class="card">
     <div class="section-title" style="margin-bottom:8px">② 업로드 스케줄</div>
+    <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:8px">📍날짜, 포맷 등 변경이 필요하면 업체별 부킹 탭에서 수정해주세요. 자동으로 반영돼요.</div>
     <div id="linked-schedule-area" style="font-size:13px;color:var(--color-text-tertiary)">채널 리스트업에서 조합을 확정하거나, 업체별 부킹에서 스케줄을 입력하면 자동으로 표시돼요.</div>
   </div>
   <div class="card" style="padding:12px 16px">
@@ -514,7 +517,7 @@ function createManualCombo(){if(!channelDB.length){alert('채널 효율 관리 �
 function renderListupAddList(ci){const fmt=document.getElementById(`lu-fmt-${ci}`)?.value||'all';const priceType=document.getElementById(`lu-price-type-${ci}`)?.value||'max';const priceVal=parseInt(document.getElementById(`lu-price-val-${ci}`)?.value)||null;const viewsType=document.getElementById(`lu-views-type-${ci}`)?.value||'min';const viewsVal=parseInt(document.getElementById(`lu-views-val-${ci}`)?.value)||null;const search=(document.getElementById(`lu-search-${ci}`)?.value||'').trim().toLowerCase();const existingKeys=new Set((window._combos[ci]?.channels||[]).map(r=>r.channel+'__'+r.format));const filtered=channelDB.filter(r=>{if(existingKeys.has(r.channel+'__'+r.format))return false;if(search&&!r.channel.toLowerCase().includes(search))return false;if(fmt!=='all'&&r.format!==fmt)return false;if(priceVal){if(priceType==='max'&&r.price>priceVal)return false;if(priceType==='min'&&r.price<priceVal)return false;if(priceType==='exact'&&r.price!==priceVal)return false;}if(viewsVal){if(viewsType==='min'&&(r.views||0)<viewsVal)return false;if(viewsType==='max'&&(r.views||0)>viewsVal)return false;if(viewsType==='exact'&&(r.views||0)!==viewsVal)return false;}return true;});if(!search&&!priceVal&&!viewsVal){document.getElementById(`lu-add-result-${ci}`).innerHTML='<div style="font-size:12px;color:var(--color-text-tertiary);padding:6px 0">채널명 검색 또는 조건을 입력하면 목록이 표시돼요</div>';return;}const el=document.getElementById(`lu-add-result-${ci}`);if(!filtered.length){el.innerHTML='<div style="font-size:12px;color:var(--color-text-tertiary);padding:6px 0">조건에 맞는 채널이 없어요</div>';return;}el.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0">${filtered.map(r=>{const cpv=computeListupCPV(r);const useExp=r.expectedViews>0;const dispViews=useExp?r.expectedViews:(r.views||0);const expStyle=useExp?'color:#2563eb':'';return `<button class="chip-btn" onclick="addListupChannel(${ci},${channelDB.indexOf(r)})"><span class="badge ${r.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:9px;padding:1px 5px">${r.format}</span>${r.channel} · ${r.price.toLocaleString()}원 · <span style="${expStyle}">${dispViews.toLocaleString()}조회</span>${cpv?' · <span style="'+expStyle+'">CPV '+cpv.toFixed(1)+'</span>':''}</button>`;}).join('')}</div>`;}
 function addListupChannel(ci,dbIdx){if(dbIdx<0||!channelDB[dbIdx])return;const search=document.getElementById(`lu-search-${ci}`)?.value||'';const fmt=document.getElementById(`lu-fmt-${ci}`)?.value||'all';const priceType=document.getElementById(`lu-price-type-${ci}`)?.value||'max';const priceVal=document.getElementById(`lu-price-val-${ci}`)?.value||'';const viewsType=document.getElementById(`lu-views-type-${ci}`)?.value||'min';const viewsVal=document.getElementById(`lu-views-val-${ci}`)?.value||'';window._combos[ci].channels.push({...channelDB[dbIdx]});document.getElementById(`listup-tbody-${ci}`).innerHTML=renderListupRows(window._combos[ci].channels,ci);document.getElementById(`listup-summary-${ci}`).textContent=comboSummary(window._combos[ci].channels);setTimeout(()=>{if(document.getElementById(`lu-search-${ci}`))document.getElementById(`lu-search-${ci}`).value=search;if(document.getElementById(`lu-fmt-${ci}`))document.getElementById(`lu-fmt-${ci}`).value=fmt;if(document.getElementById(`lu-price-type-${ci}`))document.getElementById(`lu-price-type-${ci}`).value=priceType;if(document.getElementById(`lu-price-val-${ci}`))document.getElementById(`lu-price-val-${ci}`).value=priceVal;if(document.getElementById(`lu-views-type-${ci}`))document.getElementById(`lu-views-type-${ci}`).value=viewsType;if(document.getElementById(`lu-views-val-${ci}`))document.getElementById(`lu-views-val-${ci}`).value=viewsVal;renderListupAddList(ci);},50);}
 function confirmCombo(ci){const combo=window._combos[ci];if(!combo)return;const existing=confirmedCombos.findIndex(c=>c.id===combo.id);if(existing>=0){confirmedCombos[existing]=JSON.parse(JSON.stringify(combo));}else{confirmedCombos.push(JSON.parse(JSON.stringify(combo)));}const btn=document.getElementById(`confirm-btn-${ci}`);if(btn){btn.textContent='확정됨 ✓';btn.style.opacity='0.5';}renderBookingTab();}
-function cancelCombo(id){const idx=confirmedCombos.findIndex(c=>c.id===id);if(idx>=0)confirmedCombos.splice(idx,1);renderBookingTab();}
+function cancelCombo(id){const idx=confirmedCombos.findIndex(c=>c.id===id);if(idx>=0)confirmedCombos.splice(idx,1);const combos=window._combos||[];const ci=combos.findIndex(c=>c.id===id);if(ci>=0){const btn=document.getElementById(`confirm-btn-${ci}`);if(btn){btn.textContent='확정 ✓';btn.style.opacity='1';}}renderBookingTab();}
 const DUPE_COLORS=['#ef4444','#f97316','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ec4899','#2563eb'];
 let bookingSortState={};
 function sortBooking(ci,key){const state=bookingSortState[ci]||{key:null,asc:true};const asc=state.key===key?!state.asc:true;bookingSortState[ci]={key,asc};const ch=confirmedCombos[ci].channels;ch.sort((a,b)=>{let va,vb;if(key==='channel'){va=a.channel;vb=b.channel;}else if(key==='agency'){va=a.agency;vb=b.agency;}else if(key==='format'){va=a.format;vb=b.format;}else if(key==='grade'){const o={'상':0,'중':1,'하':2,'-':3};va=o[gradeFromCPV(computeListupCPV(a))]??3;vb=o[gradeFromCPV(computeListupCPV(b))]??3;}else if(key==='price'){va=a.price;vb=b.price;}else if(key==='views'){va=a.views||0;vb=b.views||0;}else if(key==='cpv'){va=computeListupCPV(a)||999;vb=computeListupCPV(b)||999;}if(typeof va==='string')return asc?va.localeCompare(vb):vb.localeCompare(va);return asc?va-vb:vb-va;});renderBookingTab();}
@@ -526,6 +529,17 @@ function addBookingChannelKeepFilter(ci,dbIdx){if(dbIdx<0||!channelDB[dbIdx])ret
 function deleteBookingChannel(ci,ri){confirmedCombos[ci].channels.splice(ri,1);renderBookingTab();}
 function renderBookingTab(){const has=confirmedCombos.length>0;document.getElementById('booking-empty').style.display=has?'none':'block';document.getElementById('agency-divider').style.display=has?'block':'none';document.getElementById('agency-section').style.display=has?'block':'none';document.getElementById('kakao-section').style.display=has?'block':'none';if(!has){document.getElementById('booking-combos').innerHTML='';return;}const colorMap=getDupeColorMap();document.getElementById('booking-combos').innerHTML=confirmedCombos.map((combo,ci)=>{return `<div class="booking-combo-card"><div class="booking-combo-header"><div style="flex:1"><span style="font-weight:500;font-size:14px">${combo.name}</span><span style="font-size:12px;color:var(--color-text-secondary);margin-left:10px">${comboSummary(combo.channels)}</span></div><div style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:var(--color-text-secondary)">업로드 날짜</span><input type="date" value="${combo.date||''}" onchange="confirmedCombos[${ci}].date=this.value;renderAgencySection()" style="font-size:12px;padding:4px 8px;border-radius:var(--border-radius-md);height:30px;border:0.5px solid var(--color-border-secondary)"><button class="cancel-btn" onclick="cancelCombo(${combo.id})">확정 취소</button></div></div><table style="font-size:12px"><thead><tr><th style="cursor:pointer" onclick="sortBooking(${ci},'agency')">업체 ${bookingSortArrow(ci,'agency')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'format')">포맷 ${bookingSortArrow(ci,'format')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'grade')">효율 ${bookingSortArrow(ci,'grade')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'channel')">채널명 ${bookingSortArrow(ci,'channel')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'price')">단가 ${bookingSortArrow(ci,'price')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'views')">평균 조회수 ${bookingSortArrow(ci,'views')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'cpv')">조회당 비용 ${bookingSortArrow(ci,'cpv')}</th><th></th></tr></thead><tbody>${combo.channels.map((r,ri)=>{const cpv=computeListupCPV(r),g=gradeFromCPV(cpv);const dupeColor=colorMap[r.channel+'__'+r.format];const useExp=r.expectedViews>0;const dispViews=useExp?r.expectedViews:(r.views||0);const expColor=useExp?'color:#2563eb':'';return `<tr><td>${r.agency}</td><td><span class="badge ${r.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${r.format}</span></td><td><span class="badge ${badgeClass(g)}" style="font-size:10px">${g}</span></td><td style="font-weight:500;${dupeColor?`color:${dupeColor}`:''}">${r.channel}${dupeColor?` <span style="font-size:10px">●</span>`:''}</td><td>${r.price.toLocaleString()}원</td><td style="${expColor}">${dispViews.toLocaleString()}</td><td style="${expColor}">${cpv?cpv.toFixed(2):'-'}</td><td><button class="del-btn" onclick="deleteBookingChannel(${ci},${ri})">삭제</button></td></tr>`;}).join('')}</tbody></table><div class="add-filter-row"><span style="font-size:12px;color:var(--color-text-secondary);white-space:nowrap">채널 추가</span><input type="text" id="bk-search-${ci}" placeholder="채널명 검색" oninput="renderBookingAddList(${ci})" style="width:120px"><select id="bk-fmt-${ci}" onchange="renderBookingAddList(${ci})"><option value="all">전체 포맷</option><option value="릴스">릴스</option><option value="배너">배너</option></select><select id="bk-price-type-${ci}" onchange="renderBookingAddList(${ci})"><option value="max">단가 이내</option><option value="exact">단가 정확히</option><option value="min">단가 이상</option></select><input type="number" id="bk-price-val-${ci}" placeholder="금액" oninput="renderBookingAddList(${ci})" style="width:80px"><select id="bk-views-type-${ci}" onchange="renderBookingAddList(${ci})"><option value="min">조회수 이상</option><option value="exact">조회수 정확히</option><option value="max">조회수 이내</option></select><input type="number" id="bk-views-val-${ci}" placeholder="조회수" oninput="renderBookingAddList(${ci})" style="width:80px"></div><div class="add-result-row" id="bk-add-result-${ci}"><div style="font-size:12px;color:var(--color-text-tertiary);padding:6px 0">조건을 입력하면 추가할 채널 목록이 표시돼요</div></div></div>`;}).join('');renderAgencySection();}
 function renderAgencySection(){const byAgency={};confirmedCombos.forEach(combo=>{combo.channels.forEach(ch=>{if(!byAgency[ch.agency])byAgency[ch.agency]=[];byAgency[ch.agency].push({...ch,comboName:combo.name,date:combo.date||''});});});Object.values(byAgency).forEach(arr=>arr.sort((a,b)=>(a.date||'').localeCompare(b.date||'')));document.getElementById('agency-list').innerHTML=Object.entries(byAgency).map(([agency,chs])=>`<div class="agency-block"><div class="agency-title">${agency}</div><table style="font-size:13px"><thead><tr><th>포맷</th><th>효율</th><th>채널명</th><th>단가</th><th>평균 조회수</th><th>조회당 비용</th><th>조합</th><th>날짜</th></tr></thead><tbody>${chs.map(ch=>{const cpv=computeListupCPV(ch),g=gradeFromCPV(cpv);const useExp=ch.expectedViews>0;const dispViews=useExp?ch.expectedViews:(ch.views||0);const expColor=useExp?'color:#2563eb':'';const dateStr=ch.date?new Date(ch.date).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',weekday:'short'}):'미정';return `<tr><td><span class="badge ${ch.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${ch.format}</span></td><td><span class="badge ${badgeClass(g)}" style="font-size:10px">${g}</span></td><td style="font-weight:500">${ch.channel}</td><td>${ch.price.toLocaleString()}원</td><td style="${expColor}">${dispViews.toLocaleString()}</td><td style="${expColor}">${cpv?cpv.toFixed(2):'-'}</td><td style="color:var(--color-text-secondary)">${ch.comboName}</td><td>${dateStr}</td></tr>`;}).join('')}</tbody></table></div>`).join('');}
+function selectAllHistory(ei){
+  const entry=bookingHistory[ei];
+  if(!entry||!Array.isArray(entry.assignments)||!entry.assignments.length)return;
+  const table=document.getElementById('ss-history-'+ei);
+  if(!table)return;
+  ssAttach(table);
+  _ss.table=table;
+  _ss.anchor={ri:0,ci:0};
+  _ss.cursor={ri:entry.assignments.length-1,ci:9};
+  ssHighlight();
+}
 function renderHistoryTab(){
   const el=document.getElementById('history-content');
   const empty=document.getElementById('history-empty');
@@ -535,15 +549,20 @@ function renderHistoryTab(){
     let bodyHTML='';
     // 새 소재 배정 형식 (assignments 배열)
     if(Array.isArray(entry.assignments)){
-      const byAgency={};
-      entry.assignments.forEach(a=>{if(!byAgency[a.agency])byAgency[a.agency]=[];byAgency[a.agency].push(a);});
-      bodyHTML=Object.entries(byAgency).map(([agency,items])=>`
-        <div class="booking-combo-card" style="margin-bottom:10px">
-          <div class="booking-combo-header"><span style="font-weight:500;font-size:13px">${agency}</span><span style="font-size:12px;color:var(--color-text-secondary);margin-left:10px">${items.length}개 채널</span></div>
-          <table style="font-size:12px"><thead><tr><th>날짜</th><th>포맷</th><th>채널명</th><th>배정 파일</th><th>썸네일</th><th>마더</th></tr></thead>
-          <tbody>${items.map(a=>`<tr><td>${a.date||'미정'}</td><td><span class="badge ${a.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${a.format}</span></td><td style="font-weight:500">${a.channel}</td><td style="font-size:11px">${a.file||'배정 실패'}</td><td style="font-size:11px">${a.thumbSec?a.thumbSec+'초':'-'}</td><td style="font-size:11px;color:var(--color-text-tertiary)">${a.mother||'-'}</td></tr>`).join('')}</tbody>
-          </table>
-        </div>`).join('');
+      bodyHTML=`<table class="ss-table" id="ss-history-${ei}" style="font-size:12px"><thead><tr><th style="width:20px;text-align:center"><span onclick="selectAllHistory(${ei})" style="cursor:pointer;color:#6b7280" title="전체 선택">⊞</span></th><th>업체명</th><th>포맷</th><th>효율</th><th>채널명</th><th>단가</th><th>평균조회수</th><th>조회당비용</th><th>날짜</th><th>폴더명</th><th>파일명</th></tr></thead>
+        <tbody>${entry.assignments.map((a,rowIdx)=>`<tr>
+          <td style="padding:5px 8px;border:0.5px solid #e5e7eb"></td>
+          <td data-ri="${rowIdx}" data-ci="0" style="padding:5px 8px;border:0.5px solid #e5e7eb">${a.agency}</td>
+          <td data-ri="${rowIdx}" data-ci="1" style="padding:5px 8px;border:0.5px solid #e5e7eb"><span class="badge ${a.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${a.format}</span></td>
+          <td data-ri="${rowIdx}" data-ci="2" style="padding:5px 8px;border:0.5px solid #e5e7eb">${a.grade?`<span class="badge ${badgeClass(a.grade)}" style="font-size:10px">${a.grade}</span>`:'-'}</td>
+          <td data-ri="${rowIdx}" data-ci="3" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-weight:500">${a.channel}</td>
+          <td data-ri="${rowIdx}" data-ci="4" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${a.price!=null?Number(a.price).toLocaleString():'-'}</td>
+          <td data-ri="${rowIdx}" data-ci="5" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${a.views!=null?Number(a.views).toLocaleString():'-'}</td>
+          <td data-ri="${rowIdx}" data-ci="6" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${a.cpv?Number(a.cpv).toFixed(2):'-'}</td>
+          <td data-ri="${rowIdx}" data-ci="7" style="padding:5px 8px;border:0.5px solid #e5e7eb">${a.date||'미정'}</td>
+          <td data-ri="${rowIdx}" data-ci="8" style="padding:5px 8px;border:0.5px solid #e5e7eb;color:#2563eb;font-size:11px">${a.folder||'—'}</td>
+          <td data-ri="${rowIdx}" data-ci="9" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${a.file&&a.file!=='배정 실패'?a.file:'<span style="color:#dc2626">배정 실패</span>'}</td>
+        </tr>`).join('')}</tbody></table>`;
     } else if(entry.combos){
       // 구 형식 (combos 배열) — 하위 호환
       const assignments=entry.assignments||{};
@@ -567,6 +586,7 @@ function renderHistoryTab(){
       ${bodyHTML}
     </div>`;
   }).join('');
+  el.querySelectorAll('.ss-table').forEach(t=>ssAttach(t));
 }
 function getCrossDuplicateChannels(){
   const comboKeys=new Set();
@@ -575,7 +595,7 @@ function getCrossDuplicateChannels(){
   bookingManualRows.filter(r=>r.date&&r.channel).forEach(r=>{manualKeys.add(`${normDate(r.date)}__${r.channel}__${r.format||'릴스'}`);});
   return [...comboKeys].filter(k=>manualKeys.has(k)).map(k=>{const[dn,ch,fmt]=k.split('__');return{date:dn,channel:ch,format:fmt};});
 }
-function generateKakao(){if(!confirmedCombos.length)return;const dups=getCrossDuplicateChannels();if(dups.length){alert(`리스트업 연동탭과 수동탭에 동일 채널·동일 날짜가 겹쳐요:\n${dups.map(d=>`${d.channel} (${d.date}, ${d.format})`).join('\n')}`);}const byAgency={};confirmedCombos.forEach(combo=>{const dateKey=combo.date||'날짜미정';combo.channels.forEach(ch=>{if(!byAgency[ch.agency])byAgency[ch.agency]={};if(!byAgency[ch.agency][dateKey])byAgency[ch.agency][dateKey]=[];byAgency[ch.agency][dateKey].push({channel:ch.channel,format:ch.format});});});const parseDate=d=>{if(!d||d==='날짜미정')return null;const norm=normDate(d);const m=norm.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?new Date(+m[1],+m[2]-1,+m[3]):null;};const fmtDate=(d)=>{if(d==='날짜미정')return d;const dt=parseDate(d);return dt&&!isNaN(dt)?dt.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',weekday:'short'}):d;};document.getElementById('kakao-area').innerHTML=Object.entries(byAgency).map(([agency,byDate])=>{const allChs=Object.values(byDate).flat();const hasR=allChs.some(c=>c.format==='릴스'),hasB=allChs.some(c=>c.format==='배너');const fmtText=hasR&&hasB?'릴스/배너':hasR?'릴스':'배너';const sortedDates=Object.keys(byDate).filter(d=>d!=='날짜미정').sort();const dateRange=sortedDates.length>=2?`${fmtDate(sortedDates[0])},${fmtDate(sortedDates[sortedDates.length-1])}`:sortedDates.length===1?fmtDate(sortedDates[0]):'날짜미정';const dateLines=sortedDates.map(d=>`${fmtDate(d)}\n${byDate[d].map(c=>`${c.channel} (${c.format})`).join('\n')}`).join('\n\n');const msg=`담당자님, 안녕하세요!\n효율 좋은 시간대에 하기 사항으로 업로드 가능한 일정 있을지 문의드립니다:)\n\n${dateLines}`;const safeId=agency.replace(/[^a-zA-Z0-9가-힣]/g,'_');return `<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:600;color:var(--color-text-primary);margin-bottom:8px">${agency}</div><textarea id="kakao-text-${safeId}" class="kakao-editable">${msg}</textarea><button class="copy-btn" onclick="copyKakao('kakao-text-${safeId}')"><i class="ti ti-copy" style="font-size:13px"></i> 복사</button></div>`;}).join('');}
+function generateKakao(){if(!confirmedCombos.length)return;const dups=getCrossDuplicateChannels();const bothFilled=confirmedCombos.length>0&&bookingManualRows.some(r=>r.agency&&r.channel);if(dups.length){alert(`리스트업 연동탭과 수동탭에 동일 채널·동일 날짜가 겹쳐요:\n${dups.map(d=>`${d.channel} (${d.date}, ${d.format})`).join('\n')}`);}else if(bothFilled){alert('리스트업 연동탭과 수동탭 모두 채워져 있어요.\n이 문안엔 지금 보고 있는 탭(연동) 내용만 포함돼요.');}const byAgency={};confirmedCombos.forEach(combo=>{const dateKey=combo.date||'날짜미정';combo.channels.forEach(ch=>{if(!byAgency[ch.agency])byAgency[ch.agency]={};if(!byAgency[ch.agency][dateKey])byAgency[ch.agency][dateKey]=[];byAgency[ch.agency][dateKey].push({channel:ch.channel,format:ch.format});});});const parseDate=d=>{if(!d||d==='날짜미정')return null;const norm=normDate(d);const m=norm.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?new Date(+m[1],+m[2]-1,+m[3]):null;};const fmtDate=(d)=>{if(d==='날짜미정')return d;const dt=parseDate(d);return dt&&!isNaN(dt)?dt.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',weekday:'short'}):d;};document.getElementById('kakao-area').innerHTML=Object.entries(byAgency).map(([agency,byDate])=>{const allChs=Object.values(byDate).flat();const hasR=allChs.some(c=>c.format==='릴스'),hasB=allChs.some(c=>c.format==='배너');const fmtText=hasR&&hasB?'릴스/배너':hasR?'릴스':'배너';const sortedDates=Object.keys(byDate).filter(d=>d!=='날짜미정').sort();const dateRange=sortedDates.length>=2?`${fmtDate(sortedDates[0])},${fmtDate(sortedDates[sortedDates.length-1])}`:sortedDates.length===1?fmtDate(sortedDates[0]):'날짜미정';const dateLines=sortedDates.map(d=>`${fmtDate(d)}\n${byDate[d].map(c=>`${c.channel} (${c.format})`).join('\n')}`).join('\n\n');const msg=`담당자님, 안녕하세요!\n효율 좋은 시간대에 하기 사항으로 업로드 가능한 일정 있을지 문의드립니다:)\n\n${dateLines}`;const safeId=agency.replace(/[^a-zA-Z0-9가-힣]/g,'_');return `<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:600;color:var(--color-text-primary);margin-bottom:8px">${agency}</div><textarea id="kakao-text-${safeId}" class="kakao-editable">${msg}</textarea><button class="copy-btn" onclick="copyKakao('kakao-text-${safeId}')"><i class="ti ti-copy" style="font-size:13px"></i> 복사</button></div>`;}).join('');}
 function copyKakao(id){const el=document.getElementById(id);if(!el)return;navigator.clipboard.writeText(el.value).then(()=>{const btn=el.nextElementSibling;btn.innerHTML='<i class="ti ti-check" style="font-size:13px"></i> 복사됨';setTimeout(()=>btn.innerHTML='<i class="ti ti-copy" style="font-size:13px"></i> 복사',2000);});}
 function normalize(name){return name.replace(/\.[^.]+$/,'').replace(/[\s_]*\d+\s*$/,'').replace(/\s+/g,' ').trim().toLowerCase();}
 function normalizeCh(ch){return(ch.channel+'_'+ch.format).toLowerCase();}
@@ -662,6 +682,7 @@ function generateBookingManualKakao(){
   if(confirmedCombos.length>0){
     const dups=getCrossDuplicateChannels();
     if(dups.length)alert(`리스트업 연동탭과 수동탭에 동일 채널·동일 날짜가 겹쳐요:\n${dups.map(d=>`${d.channel} (${d.date}, ${d.format})`).join('\n')}`);
+    else alert('리스트업 연동탭과 수동탭 모두 채워져 있어요.\n이 문안엔 지금 보고 있는 탭(수동) 내용만 포함돼요.');
   }
   const byAgency={};
   rows.forEach(r=>{
@@ -980,7 +1001,7 @@ function renderAssignmentResult(mode,result,activeTab){
     <div style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#eef4ff;border-radius:8px 8px 0 0;border:0.5px solid #c7d9f5">
         <div style="font-weight:600;font-size:13px;color:#1e3a6e">🗂 ${agency} &nbsp;<span style="font-weight:400;font-size:12px;color:#6b7280">${items.length}개 소재</span></div>
-        <button onclick="downloadAgencyZip('${mode}','${agency.replace(/'/g,"\\'")}')" class="update-btn" style="font-size:12px"><i class="ti ti-download"></i> ZIP</button>
+        <button onclick="downloadAgencyZip('${mode}','${agency.replace(/'/g,"\\'")}',this)" class="update-btn" style="font-size:12px"><i class="ti ti-download"></i> ZIP</button>
       </div>
       <div style="border:0.5px solid #c7d9f5;border-top:none;border-radius:0 0 8px 8px;overflow:hidden">
         <table class="ss-table" id="ss-agency-${agency.replace(/[^a-z0-9]/gi,'_')}" style="font-size:12px;table-layout:fixed;width:100%"><thead><tr><th style="width:50px">포맷</th><th style="width:50px">효율</th><th style="width:130px">채널명</th><th style="width:70px">단가</th><th style="width:80px">평균조회수</th><th style="width:60px">조회당비용</th><th style="width:90px">날짜</th><th style="width:200px">폴더명</th><th>파일명</th></tr></thead>
@@ -1044,7 +1065,7 @@ function renderAssignmentResult(mode,result,activeTab){
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div style="font-size:14px;font-weight:600">④ 결과 확인</div>
         <div style="display:flex;gap:8px">
-          <button onclick="downloadAllZip('${mode}')" class="update-btn" style="font-size:12px"><i class="ti ti-download"></i> 업체별 ZIP 일괄</button>
+          <button onclick="downloadAllZip('${mode}',this)" class="update-btn" style="font-size:12px"><i class="ti ti-download"></i> 업체별 ZIP 일괄</button>
           <button onclick="saveToHistory('${mode}')" class="update-btn" style="font-size:12px;color:#16a34a"><i class="ti ti-device-floppy"></i> 부킹 내역 저장</button>
         </div>
       </div>
@@ -1130,45 +1151,57 @@ function resDragStart(event,fromIdx,mode){
   document.addEventListener('mouseup',onUp,{once:true});
 }
 
-async function downloadAgencyZip(mode,agency){
+async function downloadAgencyZip(mode,agency,btn){
   if(typeof JSZip==='undefined'){alert('JSZip 라이브러리가 필요해요.');return;}
   const result=mode==='linked'?linkedResult:manualResult;
   if(!result)return;
   const items=result.assignments.filter(a=>a.agency===agency&&a.assigned);
   if(!items.length){alert('다운로드할 파일이 없어요.');return;}
-  const zip=new JSZip();
-  for(const a of items){
-    const folderName=a.format==='릴스'?`${a.dateNorm}_${a.channel}_썸네일${a.thumbSec}초`:`${a.dateNorm}_${a.agency}_${a.channel}`;
-    const folder=zip.folder(folderName);
-    folder.file(a.file.name,a.file);
-    if(a.sideFiles)a.sideFiles.forEach(f=>folder.file(f.name,f));
-    if(a.caption)folder.file('캡션_해시태그.txt',a.caption);
-  }
-  const blob=await zip.generateAsync({type:'blob'});
-  const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`${agency}.zip`;link.click();
-}
-
-async function downloadAllZip(mode){
-  if(typeof JSZip==='undefined'){alert('JSZip 라이브러리가 필요해요.');return;}
-  const result=mode==='linked'?linkedResult:manualResult;
-  if(!result)return;
-  const agencies=[...new Set(result.assignments.filter(a=>a.assigned).map(a=>a.agency))];
-  const outer=new JSZip();
-  for(const agency of agencies){
-    const items=result.assignments.filter(a=>a.agency===agency&&a.assigned);
-    const inner=new JSZip();
+  const origHTML=btn?btn.innerHTML:null;
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2 spinning" style="font-size:14px"></i> 압축 중...';}
+  try{
+    const zip=new JSZip();
     for(const a of items){
       const folderName=a.format==='릴스'?`${a.dateNorm}_${a.channel}_썸네일${a.thumbSec}초`:`${a.dateNorm}_${a.agency}_${a.channel}`;
-      const folder=inner.folder(folderName);
+      const folder=zip.folder(folderName);
       folder.file(a.file.name,a.file);
       if(a.sideFiles)a.sideFiles.forEach(f=>folder.file(f.name,f));
       if(a.caption)folder.file('캡션_해시태그.txt',a.caption);
     }
-    const blob=await inner.generateAsync({type:'blob'});
-    outer.file(`${agency}.zip`,blob);
+    const blob=await zip.generateAsync({type:'blob'});
+    const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`${agency}.zip`;link.click();
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML=origHTML;}
   }
-  const blob=await outer.generateAsync({type:'blob'});
-  const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`전체_소재배정_${new Date().toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'}).replace(/\.\s*/g,'').replace(/\./,'')}.zip`;link.click();
+}
+
+async function downloadAllZip(mode,btn){
+  if(typeof JSZip==='undefined'){alert('JSZip 라이브러리가 필요해요.');return;}
+  const result=mode==='linked'?linkedResult:manualResult;
+  if(!result)return;
+  const agencies=[...new Set(result.assignments.filter(a=>a.assigned).map(a=>a.agency))];
+  const origHTML=btn?btn.innerHTML:null;
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2 spinning" style="font-size:14px"></i> 압축 중...';}
+  try{
+    const outer=new JSZip();
+    for(const agency of agencies){
+      const items=result.assignments.filter(a=>a.agency===agency&&a.assigned);
+      const inner=new JSZip();
+      for(const a of items){
+        const folderName=a.format==='릴스'?`${a.dateNorm}_${a.channel}_썸네일${a.thumbSec}초`:`${a.dateNorm}_${a.agency}_${a.channel}`;
+        const folder=inner.folder(folderName);
+        folder.file(a.file.name,a.file);
+        if(a.sideFiles)a.sideFiles.forEach(f=>folder.file(f.name,f));
+        if(a.caption)folder.file('캡션_해시태그.txt',a.caption);
+      }
+      const blob=await inner.generateAsync({type:'blob'});
+      outer.file(`${agency}.zip`,blob);
+    }
+    const blob=await outer.generateAsync({type:'blob'});
+    const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`전체_소재배정_${new Date().toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'}).replace(/\.\s*/g,'').replace(/\./,'')}.zip`;link.click();
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML=origHTML;}
+  }
 }
 
 function saveToHistory(mode){
@@ -1177,7 +1210,11 @@ function saveToHistory(mode){
   bookingHistory.unshift({
     savedAt:new Date().toLocaleString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}),
     mode,
-    assignments:result.assignments.map(a=>({date:a.dateNorm,agency:a.agency,channel:a.channel,format:a.format,file:a.assigned?a.file.name:'배정 실패',thumbSec:a.thumbSec,mother:a.motherName})),
+    assignments:result.assignments.map(a=>{
+      const stats=getChannelStats(a.channel,a.format);
+      const folder=a.assigned?(a.format==='릴스'?`${a.dateNorm}_${a.channel}_썸네일${a.thumbSec}초`:`${a.dateNorm}_${a.agency}_${a.channel}`):'—';
+      return{date:a.dateNorm,agency:a.agency,channel:a.channel,format:a.format,grade:stats.grade,price:stats.price,views:stats.views,cpv:stats.cpv,folder,file:a.assigned?a.file.name:'배정 실패',thumbSec:a.thumbSec,mother:a.motherName};
+    }),
     conflicts:result.conflicts
   });
   localStorage.setItem('bookingHistory',JSON.stringify(bookingHistory));
@@ -1457,10 +1494,11 @@ document.addEventListener('keydown',function(e){
 document.addEventListener('paste',function(e){
   const activeInput=document.activeElement;
   // booking-manual-table paste
-  const bookingPanel=document.getElementById('booking-manual-panel');
+  const bookingTableEl=document.getElementById('booking-manual-table');
+  const bookingVisible=bookingTableEl&&bookingTableEl.offsetParent!==null;
   const insideBookingTable=activeInput&&activeInput.tagName==='INPUT'&&activeInput.closest('#booking-manual-table');
-  const hasSSBooking=_ss.table&&_ss.table.id==='booking-manual-table'&&_ss.anchor;
-  if(bookingPanel&&bookingPanel.style.display!=='none'&&(insideBookingTable||hasSSBooking)){
+  const hasSSBooking=bookingVisible&&_ss.table&&_ss.table.id==='booking-manual-table'&&_ss.anchor;
+  if(bookingVisible&&(insideBookingTable||hasSSBooking)){
     const text=e.clipboardData.getData('text');
     if(!text)return;
     const rows=text.trim().split('\n').map(r=>r.split('\t').map(c=>c.trim()));
