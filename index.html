@@ -557,8 +557,8 @@ function renderHistoryTab(){
           <td data-ri="${rowIdx}" data-ci="2" style="padding:5px 8px;border:0.5px solid #e5e7eb">${a.grade?`<span class="badge ${badgeClass(a.grade)}" style="font-size:10px">${a.grade}</span>`:'-'}</td>
           <td data-ri="${rowIdx}" data-ci="3" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-weight:500">${a.channel}</td>
           <td data-ri="${rowIdx}" data-ci="4" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${a.price!=null?Number(a.price).toLocaleString():'-'}</td>
-          <td data-ri="${rowIdx}" data-ci="5" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${a.views!=null?Number(a.views).toLocaleString():'-'}</td>
-          <td data-ri="${rowIdx}" data-ci="6" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${a.cpv?Number(a.cpv).toFixed(2):'-'}</td>
+          <td data-ri="${rowIdx}" data-ci="5" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px;${a.useExp?'color:#2563eb':''}">${a.views!=null?Number(a.views).toLocaleString():'-'}</td>
+          <td data-ri="${rowIdx}" data-ci="6" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px;${a.useExp?'color:#2563eb':''}">${a.cpv?Number(a.cpv).toFixed(2):'-'}</td>
           <td data-ri="${rowIdx}" data-ci="7" style="padding:5px 8px;border:0.5px solid #e5e7eb">${a.date||'미정'}</td>
           <td data-ri="${rowIdx}" data-ci="8" style="padding:5px 8px;border:0.5px solid #e5e7eb;color:#2563eb;font-size:11px">${a.folder||'—'}</td>
           <td data-ri="${rowIdx}" data-ci="9" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${a.file&&a.file!=='배정 실패'?a.file:'<span style="color:#dc2626">배정 실패</span>'}</td>
@@ -977,10 +977,11 @@ let _resActiveTab={};
 function getChannelStats(channel,format){
   const norm=n=>n.replace(/\(.*?\)/g,'').toLowerCase().replace(/[\s_\-\.]/g,'');
   const ch=channelDB.find(r=>r.format===format&&norm(r.channel)===norm(channel));
-  if(!ch)return{price:null,views:null,cpv:null,grade:'하'};
+  if(!ch)return{price:null,views:null,cpv:null,grade:'하',useExp:false};
   const cpv=computeListupCPV(ch);
   const g=gradeFromCPV(cpv);
-  return{price:ch.price||0,views:ch.views||0,cpv,grade:g==='상'||g==='중'?g:'하'};
+  const useExp=ch.expectedViews>0;
+  return{price:ch.price||0,views:useExp?ch.expectedViews:(ch.views||0),cpv,grade:g==='상'||g==='중'?g:'하',useExp};
 }
 function renderAssignmentResult(mode,result,activeTab){
   activeTab=activeTab||_resActiveTab[mode]||'agency';
@@ -1015,8 +1016,8 @@ function renderAssignmentResult(mode,result,activeTab){
             <td data-ri="${rowIdx}" data-ci="1" style="padding:5px 8px;border:0.5px solid #e5e7eb"><span class="badge ${badgeClass(stats.grade)}" style="font-size:10px">${stats.grade}</span></td>
             <td data-ri="${rowIdx}" data-ci="2" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-weight:500">${a.channel}</td>
             <td data-ri="${rowIdx}" data-ci="3" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${stats.price!==null?stats.price.toLocaleString():'-'}</td>
-            <td data-ri="${rowIdx}" data-ci="4" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${stats.views!==null?stats.views.toLocaleString():'-'}</td>
-            <td data-ri="${rowIdx}" data-ci="5" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${stats.cpv?stats.cpv.toFixed(2):'-'}</td>
+            <td data-ri="${rowIdx}" data-ci="4" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px;${stats.useExp?'color:#2563eb':''}">${stats.views!==null?stats.views.toLocaleString():'-'}</td>
+            <td data-ri="${rowIdx}" data-ci="5" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px;${stats.useExp?'color:#2563eb':''}">${stats.cpv?stats.cpv.toFixed(2):'-'}</td>
             <td data-ri="${rowIdx}" data-ci="6" style="padding:5px 8px;border:0.5px solid #e5e7eb">${a.dateNorm||'미정'}</td>
             <td data-ri="${rowIdx}" data-ci="7" style="padding:5px 8px;border:0.5px solid #e5e7eb;color:#2563eb;font-size:11px">${folder}</td>
             <td data-ri="${rowIdx}" data-ci="8" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${handle}${fileContent}</td>
@@ -1037,8 +1038,8 @@ function renderAssignmentResult(mode,result,activeTab){
       <td data-ri="${rowIdx}" data-ci="2" style="padding:5px 8px;border:0.5px solid #e5e7eb"><span class="badge ${badgeClass(stats.grade)}" style="font-size:10px">${stats.grade}</span></td>
       <td data-ri="${rowIdx}" data-ci="3" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-weight:500">${a.channel}</td>
       <td data-ri="${rowIdx}" data-ci="4" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${stats.price!==null?stats.price.toLocaleString():'-'}</td>
-      <td data-ri="${rowIdx}" data-ci="5" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${stats.views!==null?stats.views.toLocaleString():'-'}</td>
-      <td data-ri="${rowIdx}" data-ci="6" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${stats.cpv?stats.cpv.toFixed(2):'-'}</td>
+      <td data-ri="${rowIdx}" data-ci="5" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px;${stats.useExp?'color:#2563eb':''}">${stats.views!==null?stats.views.toLocaleString():'-'}</td>
+      <td data-ri="${rowIdx}" data-ci="6" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px;${stats.useExp?'color:#2563eb':''}">${stats.cpv?stats.cpv.toFixed(2):'-'}</td>
       <td data-ri="${rowIdx}" data-ci="7" style="padding:5px 8px;border:0.5px solid #e5e7eb">${a.dateNorm||'미정'}</td>
       <td data-ri="${rowIdx}" data-ci="8" style="padding:5px 8px;border:0.5px solid #e5e7eb;color:#2563eb;font-size:11px">${folder}</td>
       <td data-ri="${rowIdx}" data-ci="9" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${a.assigned?(`<span onmousedown="resDragStart(event,${a._idx},'${mode}')" style="float:right;cursor:grab;color:#9ca3af;font-size:14px;margin-left:8px;user-select:none">⠿</span>`+a.file.name):'<span style="color:#dc2626">배정 실패</span>'}</td>
@@ -1213,7 +1214,7 @@ function saveToHistory(mode){
     assignments:result.assignments.map(a=>{
       const stats=getChannelStats(a.channel,a.format);
       const folder=a.assigned?(a.format==='릴스'?`${a.dateNorm}_${a.channel}_썸네일${a.thumbSec}초`:`${a.dateNorm}_${a.agency}_${a.channel}`):'—';
-      return{date:a.dateNorm,agency:a.agency,channel:a.channel,format:a.format,grade:stats.grade,price:stats.price,views:stats.views,cpv:stats.cpv,folder,file:a.assigned?a.file.name:'배정 실패',thumbSec:a.thumbSec,mother:a.motherName};
+      return{date:a.dateNorm,agency:a.agency,channel:a.channel,format:a.format,grade:stats.grade,price:stats.price,views:stats.views,cpv:stats.cpv,useExp:stats.useExp,folder,file:a.assigned?a.file.name:'배정 실패',thumbSec:a.thumbSec,mother:a.motherName};
     }),
     conflicts:result.conflicts
   });
