@@ -302,7 +302,7 @@ tr.res-drag-over td{background:#dbeafe !important;outline:2px solid #2563eb;outl
 
   <!-- 리스트업 수동 -->
   <div id="booking-manual-panel" style="display:none">
-    <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:10px">스케줄 표에서 날짜·업체명·채널명·포맷 4열 복사 후 Ctrl+V로 붙여넣기</div>
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:10px;line-height:1.6">① 채널명 붙여넣으면 업체명, 단가 자동완성<br>② 포맷 입력 시 포맷별 평균조회수, 조회당비용 자동입력<br>③ 날짜 입력 후 업체별 문안 생성 누르기</div>
     <div style="overflow-x:auto">
       <table id="booking-manual-table" class="ss-table" style="font-size:12px;min-width:520px;border-collapse:collapse">
         <thead><tr style="background:#f9fafb">
@@ -664,13 +664,13 @@ function renderBookingManualTable(){
     return `<tr>
     <td data-ri="${i}" data-ci="0" style="padding:4px;text-align:center;color:#9ca3af;font-size:11px;border:0.5px solid #e5e7eb;background:#f9fafb">${i+1}</td>
     <td data-ri="${i}" data-ci="1" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.agency||''}" placeholder="자동입력" oninput="bookingManualRows[${i}].agency=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent"></td>
-    <td data-ri="${i}" data-ci="2" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.format||''}" placeholder="릴스/배너" oninput="liveFormatUpdate(this,bookingManualRows,${i},'booking-manual-body')" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:60px;background:transparent"></td>
+    <td data-ri="${i}" data-ci="2" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.format||''}" placeholder="릴스/배너" oninput="liveFormatUpdate(this,bookingManualRows,${i},'booking-manual-body')" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:60px;background:transparent;font-weight:500"></td>
     <td data-ri="${i}" data-ci="3" style="padding:4px 6px;border:0.5px solid #e5e7eb;${autoStyle};text-align:center">${r.agency?`<span class="badge ${badgeClass(grade)}">${grade}</span>`:''}</td>
     <td data-ri="${i}" data-ci="4" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.channel||''}" placeholder="채널명 입력" oninput="bookingManualRows[${i}].channel=this.value;autoFillRow(bookingManualRows,${i},renderBookingManualTable,'booking-manual-table')" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:90px;background:transparent;font-weight:500"></td>
     <td data-ri="${i}" data-ci="5" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.price>0?Number(r.price).toLocaleString():''}" placeholder="자동입력" oninput="bookingManualRows[${i}].price=parseInt(this.value.replace(/,/g,''))||0" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent"></td>
     <td data-ri="${i}" data-ci="6" style="padding:0;border:0.5px solid #e5e7eb"><input value="${dispViews>0?Number(dispViews).toLocaleString():''}" placeholder="자동입력" oninput="bookingManualRows[${i}].views=parseInt(this.value.replace(/,/g,''))||0" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent;${expColor}"></td>
     <td data-ri="${i}" data-ci="7" style="padding:4px 6px;border:0.5px solid #e5e7eb;${autoStyle};text-align:right;${expColor}">${cpv}</td>
-    <td data-ri="${i}" data-ci="8" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.date||''}" placeholder="20260625" oninput="bookingManualRows[${i}].date=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:90px;background:transparent"></td>
+    <td data-ri="${i}" data-ci="8" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.date||''}" placeholder="0720" oninput="bookingManualRows[${i}].date=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:90px;background:transparent;font-weight:500"></td>
     <td data-ri="${i}" data-ci="9" style="padding:4px;text-align:center;border:0.5px solid #e5e7eb"><button onclick="deleteBookingManualRow(${i})" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:14px">×</button></td>
   </tr>`;}).join('');
   const table=document.getElementById('booking-manual-table');
@@ -1169,13 +1169,15 @@ function autoFillRow(rowsArr,i,renderFn,tableId){
   const norm=n=>n.replace(/\(.*?\)/g,'').toLowerCase().replace(/[\s_\-\.]/g,'');
   const fmt=rowsArr[i].format;
   if(!fmt){
-    // 포맷을 아직 안 정했으면 조회수/단가/CPV는 비워두고, 업체명만 (겹치지 않을 때) 참고로 채워줌
+    // 포맷을 아직 안 정했으면 조회수/CPV는 비워두되, 업체명·단가는 포맷 상관없이 같으면 미리 채워줌
     const matches=channelDB.filter(r=>norm(r.channel)===norm(name));
     if(!matches.length)return;
     if(tableId)flushTableInputs(rowsArr,tableId);
-    rowsArr[i].price=0;rowsArr[i].views=0;rowsArr[i].expectedViews=0;
+    rowsArr[i].views=0;rowsArr[i].expectedViews=0;
     const uniqueAgencies=[...new Set(matches.map(m=>m.agency))];
     rowsArr[i].agency=uniqueAgencies.length===1?uniqueAgencies[0]:'';
+    const uniquePrices=[...new Set(matches.map(m=>m.price))];
+    rowsArr[i].price=uniquePrices.length===1?uniquePrices[0]:0;
     renderFn();
     return;
   }
@@ -1209,7 +1211,7 @@ function renderManualTable(){
     <td data-ri="${i}" data-ci="5" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.price>0?Number(r.price).toLocaleString():''}" placeholder="자동입력" oninput="manualRows[${i}].price=parseInt(this.value.replace(/,/g,''))||0" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent"></td>
     <td data-ri="${i}" data-ci="6" style="padding:0;border:0.5px solid #e5e7eb"><input value="${dispViews>0?Number(dispViews).toLocaleString():''}" placeholder="자동입력" oninput="manualRows[${i}].views=parseInt(this.value.replace(/,/g,''))||0" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:70px;background:transparent;${expColor}"></td>
     <td data-ri="${i}" data-ci="7" style="padding:4px 6px;border:0.5px solid #e5e7eb;${autoStyle};text-align:right;${expColor}">${cpv}</td>
-    <td data-ri="${i}" data-ci="8" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.date||''}" placeholder="20260625" oninput="manualRows[${i}].date=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:90px;background:transparent"></td>
+    <td data-ri="${i}" data-ci="8" style="padding:0;border:0.5px solid #e5e7eb"><input value="${r.date||''}" placeholder="0720" oninput="manualRows[${i}].date=this.value" style="width:100%;border:none;font-size:12px;padding:4px 6px;font-family:inherit;min-width:90px;background:transparent"></td>
     <td data-ri="${i}" data-ci="9" style="padding:4px;text-align:center;border:0.5px solid #e5e7eb"><button onclick="deleteManualRow(${i})" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:14px">×</button></td>
   </tr>`;}).join('');
   const table=document.getElementById('manual-schedule-table');
