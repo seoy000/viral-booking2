@@ -282,6 +282,7 @@ tr.res-drag-over td{background:#dbeafe !important;outline:2px solid #2563eb;outl
 
   <!-- 리스트업 연동 -->
   <div id="booking-linked-panel">
+    <div style="margin-bottom:12px"><button onclick="openLoadCampaignModal()" class="update-btn"><i class="ti ti-folder-open"></i> 저장된 조합 불러오기</button></div>
     <div id="booking-empty" style="color:var(--color-text-tertiary);font-size:13px;padding:24px 0">채널 리스트업 탭에서 조합을 확정하면 여기에 표시돼요.</div>
     <div id="booking-combos"></div>
     <hr class="agency-divider" id="agency-divider" style="display:none">
@@ -360,6 +361,30 @@ tr.res-drag-over td{background:#dbeafe !important;outline:2px solid #2563eb;outl
     <button onclick="runAssignment('linked')" style="width:100%;padding:14px;background:#1e3a6e;color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ti ti-player-play" style="font-size:16px"></i> 배정 실행</button>
   </div>
   <div id="linked-result"></div>
+</div>
+<!-- 캠페인 불러오기 모달 -->
+<div id="load-campaign-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center" onclick="if(event.target===this)closeLoadCampaignModal()">
+  <div style="background:#fff;border-radius:12px;padding:24px 28px;width:420px;max-height:70vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">저장된 조합 불러오기</div>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:16px">선택한 조합이 현재 목록에 추가돼요</div>
+    <div id="load-campaign-list" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px"></div>
+    <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:8px">
+      <button onclick="closeLoadCampaignModal()" style="font-size:13px;padding:7px 16px;border-radius:6px;border:1px solid #d1d5db;background:#fff;cursor:pointer">취소</button>
+      <button onclick="loadSelectedCampaigns()" style="font-size:13px;padding:7px 16px;border-radius:6px;border:none;background:#1e3a6e;color:#fff;cursor:pointer;font-weight:600">불러오기</button>
+    </div>
+  </div>
+</div>
+<!-- 캠페인 저장 모달 -->
+<div id="campaign-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center" onclick="if(event.target===this)closeCampaignModal()">
+  <div style="background:#fff;border-radius:12px;padding:28px 28px 24px;width:360px;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
+    <div style="font-size:15px;font-weight:700;margin-bottom:6px">부킹 내역에 저장</div>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:16px">저장할 이름을 입력하세요</div>
+    <input id="campaign-name-input" type="text" placeholder="예: 07.28 이나연 검색캠" style="width:100%;font-size:13px;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;margin-bottom:16px;font-family:inherit" onkeydown="if(event.key==='Enter')confirmCampaignSave()">
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="closeCampaignModal()" style="font-size:13px;padding:7px 16px;border-radius:6px;border:1px solid #d1d5db;background:#fff;cursor:pointer">취소</button>
+      <button onclick="confirmCampaignSave()" style="font-size:13px;padding:7px 16px;border-radius:6px;border:none;background:#16a34a;color:#fff;cursor:pointer;font-weight:600">저장</button>
+    </div>
+  </div>
 </div>
 </div><!-- app-body -->
 </div><!-- app-layout -->
@@ -501,7 +526,7 @@ function sortCombo(ci,key){const state=comboSortState[ci]||{key:null,asc:true};c
 function sortArrow(ci,key){const s=comboSortState[ci];if(!s||s.key!==key)return'<span style="color:#ccc;font-size:10px">↕</span>';return s.asc?'<span style="color:#2563eb;font-size:10px">↑</span>':'<span style="color:#2563eb;font-size:10px">↓</span>';}
 function renderComboHeaders(ci){const el=document.getElementById(`listup-thead-${ci}`);if(el)el.innerHTML=comboHeaderHTML(ci);}
 function comboHeaderHTML(ci){return`<tr><th style="cursor:pointer" onclick="sortCombo(${ci},'agency')">업체 ${sortArrow(ci,'agency')}</th><th style="cursor:pointer" onclick="sortCombo(${ci},'format')">포맷 ${sortArrow(ci,'format')}</th><th style="cursor:pointer" onclick="sortCombo(${ci},'grade')">효율 ${sortArrow(ci,'grade')}</th><th style="cursor:pointer" onclick="sortCombo(${ci},'channel')">채널명 ${sortArrow(ci,'channel')}</th><th style="cursor:pointer" onclick="sortCombo(${ci},'price')">단가 ${sortArrow(ci,'price')}</th><th style="cursor:pointer" onclick="sortCombo(${ci},'views')">평균 조회수 ${sortArrow(ci,'views')}</th><th style="cursor:pointer" onclick="sortCombo(${ci},'cpv')">조회당 비용 ${sortArrow(ci,'cpv')}</th><th></th></tr>`;}
-function renderComboList(){const combos=window._combos||[];document.getElementById('combo-list').innerHTML=combos.length?combos.map((combo,ci)=>`<div class="combo-card" id="combo-${combo.id}"><div class="combo-header"><div><span style="font-weight:500;font-size:14px">${combo.name}</span><span id="listup-summary-${ci}" style="font-size:12px;color:var(--color-text-secondary);margin-left:10px">${comboSummary(combo.channels)}</span></div><div style="display:flex;gap:6px;align-items:center"><button onclick="resetCombo(${ci})" style="font-size:11px;padding:3px 10px;cursor:pointer;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:none;color:var(--color-text-secondary)">↩ 되돌리기</button><button class="confirm-btn" id="confirm-btn-${ci}" onclick="confirmCombo(${ci})">확정 ✓</button></div></div><div style="padding:0"><table id="listup-table-${ci}" class="ss-table" style="font-size:12px"><thead id="listup-thead-${ci}">${comboHeaderHTML(ci)}</thead><tbody id="listup-tbody-${ci}">${renderListupRows(combo.channels,ci)}</tbody></table><div class="add-filter-row"><span style="font-size:12px;color:var(--color-text-secondary);white-space:nowrap">채널 추가</span><input type="text" id="lu-search-${ci}" placeholder="채널명 검색" oninput="renderListupAddList(${ci})" style="width:120px"><select id="lu-fmt-${ci}" onchange="renderListupAddList(${ci})"><option value="all">전체 포맷</option><option value="릴스">릴스</option><option value="배너">배너</option></select><select id="lu-price-type-${ci}" onchange="renderListupAddList(${ci})"><option value="max">단가 이내</option><option value="exact">단가 정확히</option><option value="min">단가 이상</option></select><input type="number" id="lu-price-val-${ci}" placeholder="금액" oninput="renderListupAddList(${ci})" style="width:80px"><select id="lu-views-type-${ci}" onchange="renderListupAddList(${ci})"><option value="min">조회수 이상</option><option value="exact">조회수 정확히</option><option value="max">조회수 이내</option></select><input type="number" id="lu-views-val-${ci}" placeholder="조회수" oninput="renderListupAddList(${ci})" style="width:80px"></div><div class="add-result-row" id="lu-add-result-${ci}"><div style="font-size:12px;color:var(--color-text-tertiary);padding:6px 0">조건을 입력하면 추가할 채널 목록이 표시돼요</div></div></div></div>`).join(''):'<p style="color:var(--color-text-secondary);font-size:13px;padding:12px 0">조건에 맞는 조합을 찾지 못했어요.</p>';(window._combos||[]).forEach((_,ci)=>{const t=document.getElementById('listup-table-'+ci);if(t)ssAttach(t);});}
+function renderComboList(){const combos=window._combos||[];document.getElementById('combo-list').innerHTML=combos.length?combos.map((combo,ci)=>`<div class="combo-card" id="combo-${combo.id}"><div class="combo-header"><div style="display:flex;align-items:center;gap:4px"><span id="lu-name-${ci}" style="font-weight:500;font-size:14px">${combo.name}</span><input id="lu-name-input-${ci}" type="text" value="${combo.name}" onkeydown="if(event.key==='Enter')saveComboName(${ci})" onblur="saveComboName(${ci})" style="display:none;font-size:14px;font-weight:500;border:1px solid #d1d5db;border-radius:4px;padding:1px 6px;font-family:inherit;background:#fff"><button onclick="startEditComboName(${ci})" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:13px;padding:0 2px" title="이름 변경"><i class="ti ti-pencil"></i></button><span id="listup-summary-${ci}" style="font-size:12px;color:var(--color-text-secondary);margin-left:10px">${comboSummary(combo.channels)}</span></div><div style="display:flex;gap:6px;align-items:center"><button onclick="resetCombo(${ci})" style="font-size:11px;padding:3px 10px;cursor:pointer;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:none;color:var(--color-text-secondary)">↩ 되돌리기</button><button onclick="openCampaignModal(${ci})" style="font-size:11px;padding:3px 10px;cursor:pointer;border-radius:var(--border-radius-md);border:0.5px solid #16a34a;background:none;color:#16a34a">💾 저장</button><button class="confirm-btn" id="confirm-btn-${ci}" onclick="confirmCombo(${ci})">확정 ✓</button></div></div><div style="padding:0"><table id="listup-table-${ci}" class="ss-table" style="font-size:12px"><thead id="listup-thead-${ci}">${comboHeaderHTML(ci)}</thead><tbody id="listup-tbody-${ci}">${renderListupRows(combo.channels,ci)}</tbody></table><div class="add-filter-row"><span style="font-size:12px;color:var(--color-text-secondary);white-space:nowrap">채널 추가</span><input type="text" id="lu-search-${ci}" placeholder="채널명 검색" oninput="renderListupAddList(${ci})" style="width:120px"><select id="lu-fmt-${ci}" onchange="renderListupAddList(${ci})"><option value="all">전체 포맷</option><option value="릴스">릴스</option><option value="배너">배너</option></select><select id="lu-price-type-${ci}" onchange="renderListupAddList(${ci})"><option value="max">단가 이내</option><option value="exact">단가 정확히</option><option value="min">단가 이상</option></select><input type="number" id="lu-price-val-${ci}" placeholder="금액" oninput="renderListupAddList(${ci})" style="width:80px"><select id="lu-views-type-${ci}" onchange="renderListupAddList(${ci})"><option value="min">조회수 이상</option><option value="exact">조회수 정확히</option><option value="max">조회수 이내</option></select><input type="number" id="lu-views-val-${ci}" placeholder="조회수" oninput="renderListupAddList(${ci})" style="width:80px"></div><div class="add-result-row" id="lu-add-result-${ci}"><div style="font-size:12px;color:var(--color-text-tertiary);padding:6px 0">조건을 입력하면 추가할 채널 목록이 표시돼요</div></div></div></div>`).join(''):'<p style="color:var(--color-text-secondary);font-size:13px;padding:12px 0">조건에 맞는 조합을 찾지 못했어요.</p>';(window._combos||[]).forEach((_,ci)=>{const t=document.getElementById('listup-table-'+ci);if(t)ssAttach(t);});}
 function renderListupRows(channels,ci){return channels.map((r,ri)=>{const cpv=computeListupCPV(r),g=gradeFromCPV(cpv);const useExp=r.expectedViews>0;const dispViews=useExp?r.expectedViews:(r.views||0);const viewsColor=useExp?'color:#2563eb':'';const cpvColor=useExp?'color:#2563eb':'';return `<tr><td data-ri="${ri}" data-ci="0">${r.agency}</td><td data-ri="${ri}" data-ci="1"><span class="badge ${r.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${r.format}</span></td><td data-ri="${ri}" data-ci="2"><span class="badge ${badgeClass(g)}" style="font-size:10px">${g}</span></td><td data-ri="${ri}" data-ci="3" style="font-weight:500">${r.channel}</td><td data-ri="${ri}" data-ci="4">${r.price.toLocaleString()}원</td><td data-ri="${ri}" data-ci="5" style="${viewsColor}">${dispViews.toLocaleString()}</td><td data-ri="${ri}" data-ci="6" style="${cpvColor}">${cpv?cpv.toFixed(2):'-'}</td><td><button class="del-btn" onclick="deleteListupChannel(${ci},${ri})">삭제</button></td></tr>`;}).join('');}
 function deleteListupChannel(ci,ri){window._combos[ci].channels.splice(ri,1);document.getElementById(`listup-tbody-${ci}`).innerHTML=renderListupRows(window._combos[ci].channels,ci);document.getElementById(`listup-summary-${ci}`).textContent=comboSummary(window._combos[ci].channels);}
 function resetCombo(ci){window._combos[ci].channels=[...window._combos[ci].originalChannels];document.getElementById(`listup-tbody-${ci}`).innerHTML=renderListupRows(window._combos[ci].channels,ci);document.getElementById(`listup-summary-${ci}`).textContent=comboSummary(window._combos[ci].channels);renderListupAddList(ci);}
@@ -527,7 +552,7 @@ function addBookingChannel(ci,dbIdx){if(dbIdx===undefined){renderBookingAddList(
 function renderBookingAddList(ci){const fmt=document.getElementById(`bk-fmt-${ci}`)?.value||'all';const priceType=document.getElementById(`bk-price-type-${ci}`)?.value||'max';const priceVal=parseInt(document.getElementById(`bk-price-val-${ci}`)?.value)||null;const viewsType=document.getElementById(`bk-views-type-${ci}`)?.value||'min';const viewsVal=parseInt(document.getElementById(`bk-views-val-${ci}`)?.value)||null;const search=(document.getElementById(`bk-search-${ci}`)?.value||'').trim().toLowerCase();const existingKeys=new Set((confirmedCombos[ci]?.channels||[]).map(r=>r.channel+'__'+r.format));const filtered=channelDB.filter(r=>{if(existingKeys.has(r.channel+'__'+r.format))return false;if(search&&!r.channel.toLowerCase().includes(search))return false;if(fmt!=='all'&&r.format!==fmt)return false;if(priceVal){if(priceType==='max'&&r.price>priceVal)return false;if(priceType==='min'&&r.price<priceVal)return false;if(priceType==='exact'&&r.price!==priceVal)return false;}if(viewsVal){if(viewsType==='min'&&(r.views||0)<viewsVal)return false;if(viewsType==='max'&&(r.views||0)>viewsVal)return false;if(viewsType==='exact'&&(r.views||0)!==viewsVal)return false;}return true;});if(!search&&!priceVal&&!viewsVal){document.getElementById(`bk-add-result-${ci}`).innerHTML='<div style="font-size:12px;color:var(--color-text-tertiary);padding:6px 0">채널명 검색 또는 조건을 입력하면 목록이 표시돼요</div>';return;}const el=document.getElementById(`bk-add-result-${ci}`);if(!filtered.length){el.innerHTML='<div style="font-size:12px;color:var(--color-text-tertiary);padding:6px 0">조건에 맞는 채널이 없어요</div>';return;}el.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0">${filtered.map(r=>{const cpv=computeListupCPV(r);const useExp=r.expectedViews>0;const dispViews=useExp?r.expectedViews:(r.views||0);const expStyle=useExp?'color:#2563eb':'';return `<button class="chip-btn" onclick="addBookingChannelKeepFilter(${ci},${channelDB.indexOf(r)})"><span class="badge ${r.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:9px;padding:1px 5px">${r.format}</span>${r.channel} · ${r.price.toLocaleString()}원 · <span style="${expStyle}">${dispViews.toLocaleString()}조회</span>${cpv?' · <span style="'+expStyle+'">CPV '+cpv.toFixed(1)+'</span>':''}</button>`;}).join('')}</div>`;}
 function addBookingChannelKeepFilter(ci,dbIdx){if(dbIdx<0||!channelDB[dbIdx])return;const search=document.getElementById(`bk-search-${ci}`)?.value||'';const fmt=document.getElementById(`bk-fmt-${ci}`)?.value||'all';const priceType=document.getElementById(`bk-price-type-${ci}`)?.value||'max';const priceVal=document.getElementById(`bk-price-val-${ci}`)?.value||'';const viewsType=document.getElementById(`bk-views-type-${ci}`)?.value||'min';const viewsVal=document.getElementById(`bk-views-val-${ci}`)?.value||'';confirmedCombos[ci].channels.push({...channelDB[dbIdx]});renderBookingTab();setTimeout(()=>{if(document.getElementById(`bk-search-${ci}`))document.getElementById(`bk-search-${ci}`).value=search;if(document.getElementById(`bk-fmt-${ci}`))document.getElementById(`bk-fmt-${ci}`).value=fmt;if(document.getElementById(`bk-price-type-${ci}`))document.getElementById(`bk-price-type-${ci}`).value=priceType;if(document.getElementById(`bk-price-val-${ci}`))document.getElementById(`bk-price-val-${ci}`).value=priceVal;if(document.getElementById(`bk-views-type-${ci}`))document.getElementById(`bk-views-type-${ci}`).value=viewsType;if(document.getElementById(`bk-views-val-${ci}`))document.getElementById(`bk-views-val-${ci}`).value=viewsVal;renderBookingAddList(ci);},50);}
 function deleteBookingChannel(ci,ri){confirmedCombos[ci].channels.splice(ri,1);renderBookingTab();}
-function renderBookingTab(){const has=confirmedCombos.length>0;document.getElementById('booking-empty').style.display=has?'none':'block';document.getElementById('agency-divider').style.display=has?'block':'none';document.getElementById('agency-section').style.display=has?'block':'none';document.getElementById('kakao-section').style.display=has?'block':'none';if(!has){document.getElementById('booking-combos').innerHTML='';return;}const colorMap=getDupeColorMap();document.getElementById('booking-combos').innerHTML=confirmedCombos.map((combo,ci)=>{return `<div class="booking-combo-card"><div class="booking-combo-header"><div style="flex:1"><span style="font-weight:500;font-size:14px">${combo.name}</span><span style="font-size:12px;color:var(--color-text-secondary);margin-left:10px">${comboSummary(combo.channels)}</span></div><div style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:var(--color-text-secondary)">업로드 날짜</span><input type="date" value="${combo.date||''}" onchange="confirmedCombos[${ci}].date=this.value;renderAgencySection()" style="font-size:12px;padding:4px 8px;border-radius:var(--border-radius-md);height:30px;border:0.5px solid var(--color-border-secondary)"><button class="cancel-btn" onclick="cancelCombo(${combo.id})">확정 취소</button></div></div><table style="font-size:12px"><thead><tr><th style="cursor:pointer" onclick="sortBooking(${ci},'agency')">업체 ${bookingSortArrow(ci,'agency')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'format')">포맷 ${bookingSortArrow(ci,'format')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'grade')">효율 ${bookingSortArrow(ci,'grade')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'channel')">채널명 ${bookingSortArrow(ci,'channel')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'price')">단가 ${bookingSortArrow(ci,'price')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'views')">평균 조회수 ${bookingSortArrow(ci,'views')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'cpv')">조회당 비용 ${bookingSortArrow(ci,'cpv')}</th><th></th></tr></thead><tbody>${combo.channels.map((r,ri)=>{const cpv=computeListupCPV(r),g=gradeFromCPV(cpv);const dupeColor=colorMap[r.channel+'__'+r.format];const useExp=r.expectedViews>0;const dispViews=useExp?r.expectedViews:(r.views||0);const expColor=useExp?'color:#2563eb':'';return `<tr><td>${r.agency}</td><td><span class="badge ${r.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${r.format}</span></td><td><span class="badge ${badgeClass(g)}" style="font-size:10px">${g}</span></td><td style="font-weight:500;${dupeColor?`color:${dupeColor}`:''}">${r.channel}${dupeColor?` <span style="font-size:10px">●</span>`:''}</td><td>${r.price.toLocaleString()}원</td><td style="${expColor}">${dispViews.toLocaleString()}</td><td style="${expColor}">${cpv?cpv.toFixed(2):'-'}</td><td><button class="del-btn" onclick="deleteBookingChannel(${ci},${ri})">삭제</button></td></tr>`;}).join('')}</tbody></table><div class="add-filter-row"><span style="font-size:12px;color:var(--color-text-secondary);white-space:nowrap">채널 추가</span><input type="text" id="bk-search-${ci}" placeholder="채널명 검색" oninput="renderBookingAddList(${ci})" style="width:120px"><select id="bk-fmt-${ci}" onchange="renderBookingAddList(${ci})"><option value="all">전체 포맷</option><option value="릴스">릴스</option><option value="배너">배너</option></select><select id="bk-price-type-${ci}" onchange="renderBookingAddList(${ci})"><option value="max">단가 이내</option><option value="exact">단가 정확히</option><option value="min">단가 이상</option></select><input type="number" id="bk-price-val-${ci}" placeholder="금액" oninput="renderBookingAddList(${ci})" style="width:80px"><select id="bk-views-type-${ci}" onchange="renderBookingAddList(${ci})"><option value="min">조회수 이상</option><option value="exact">조회수 정확히</option><option value="max">조회수 이내</option></select><input type="number" id="bk-views-val-${ci}" placeholder="조회수" oninput="renderBookingAddList(${ci})" style="width:80px"></div><div class="add-result-row" id="bk-add-result-${ci}"><div style="font-size:12px;color:var(--color-text-tertiary);padding:6px 0">조건을 입력하면 추가할 채널 목록이 표시돼요</div></div></div>`;}).join('');renderAgencySection();}
+function renderBookingTab(){const has=confirmedCombos.length>0;document.getElementById('booking-empty').style.display=has?'none':'block';document.getElementById('agency-divider').style.display=has?'block':'none';document.getElementById('agency-section').style.display=has?'block':'none';document.getElementById('kakao-section').style.display=has?'block':'none';if(!has){document.getElementById('booking-combos').innerHTML='';return;}const colorMap=getDupeColorMap();document.getElementById('booking-combos').innerHTML=confirmedCombos.map((combo,ci)=>{return `<div class="booking-combo-card"><div class="booking-combo-header"><div style="flex:1;display:flex;align-items:center;gap:4px"><span id="bk-name-${ci}" style="font-weight:500;font-size:14px">${combo.name}</span><input id="bk-name-input-${ci}" type="text" value="${combo.name}" onkeydown="if(event.key==='Enter')saveBookingComboName(${ci})" onblur="saveBookingComboName(${ci})" style="display:none;font-size:14px;font-weight:500;border:1px solid #d1d5db;border-radius:4px;padding:1px 6px;font-family:inherit;background:#fff"><button onclick="startEditBookingComboName(${ci})" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:13px;padding:0 2px" title="이름 변경"><i class="ti ti-pencil"></i></button><span style="font-size:12px;color:var(--color-text-secondary);margin-left:6px">${comboSummary(combo.channels)}</span></div><div style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:var(--color-text-secondary)">업로드 날짜</span><input type="date" value="${combo.date||''}" onchange="confirmedCombos[${ci}].date=this.value;renderAgencySection()" style="font-size:12px;padding:4px 8px;border-radius:var(--border-radius-md);height:30px;border:0.5px solid var(--color-border-secondary)"><button class="cancel-btn" onclick="cancelCombo(${combo.id})">확정 취소</button></div></div><table style="font-size:12px"><thead><tr><th style="cursor:pointer" onclick="sortBooking(${ci},'agency')">업체 ${bookingSortArrow(ci,'agency')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'format')">포맷 ${bookingSortArrow(ci,'format')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'grade')">효율 ${bookingSortArrow(ci,'grade')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'channel')">채널명 ${bookingSortArrow(ci,'channel')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'price')">단가 ${bookingSortArrow(ci,'price')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'views')">평균 조회수 ${bookingSortArrow(ci,'views')}</th><th style="cursor:pointer" onclick="sortBooking(${ci},'cpv')">조회당 비용 ${bookingSortArrow(ci,'cpv')}</th><th></th></tr></thead><tbody>${combo.channels.map((r,ri)=>{const cpv=computeListupCPV(r),g=gradeFromCPV(cpv);const dupeColor=colorMap[r.channel+'__'+r.format];const useExp=r.expectedViews>0;const dispViews=useExp?r.expectedViews:(r.views||0);const expColor=useExp?'color:#2563eb':'';return `<tr><td>${r.agency}</td><td><span class="badge ${r.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${r.format}</span></td><td><span class="badge ${badgeClass(g)}" style="font-size:10px">${g}</span></td><td style="font-weight:500;${dupeColor?`color:${dupeColor}`:''}">${r.channel}${dupeColor?` <span style="font-size:10px">●</span>`:''}</td><td>${r.price.toLocaleString()}원</td><td style="${expColor}">${dispViews.toLocaleString()}</td><td style="${expColor}">${cpv?cpv.toFixed(2):'-'}</td><td><button class="del-btn" onclick="deleteBookingChannel(${ci},${ri})">삭제</button></td></tr>`;}).join('')}</tbody></table><div class="add-filter-row"><span style="font-size:12px;color:var(--color-text-secondary);white-space:nowrap">채널 추가</span><input type="text" id="bk-search-${ci}" placeholder="채널명 검색" oninput="renderBookingAddList(${ci})" style="width:120px"><select id="bk-fmt-${ci}" onchange="renderBookingAddList(${ci})"><option value="all">전체 포맷</option><option value="릴스">릴스</option><option value="배너">배너</option></select><select id="bk-price-type-${ci}" onchange="renderBookingAddList(${ci})"><option value="max">단가 이내</option><option value="exact">단가 정확히</option><option value="min">단가 이상</option></select><input type="number" id="bk-price-val-${ci}" placeholder="금액" oninput="renderBookingAddList(${ci})" style="width:80px"><select id="bk-views-type-${ci}" onchange="renderBookingAddList(${ci})"><option value="min">조회수 이상</option><option value="exact">조회수 정확히</option><option value="max">조회수 이내</option></select><input type="number" id="bk-views-val-${ci}" placeholder="조회수" oninput="renderBookingAddList(${ci})" style="width:80px"></div><div class="add-result-row" id="bk-add-result-${ci}"><div style="font-size:12px;color:var(--color-text-tertiary);padding:6px 0">조건을 입력하면 추가할 채널 목록이 표시돼요</div></div></div>`;}).join('');renderAgencySection();}
 function renderAgencySection(){const byAgency={};confirmedCombos.forEach(combo=>{combo.channels.forEach(ch=>{if(!byAgency[ch.agency])byAgency[ch.agency]=[];byAgency[ch.agency].push({...ch,comboName:combo.name,date:combo.date||''});});});Object.values(byAgency).forEach(arr=>arr.sort((a,b)=>(a.date||'').localeCompare(b.date||'')));document.getElementById('agency-list').innerHTML=Object.entries(byAgency).map(([agency,chs])=>`<div class="agency-block"><div class="agency-title">${agency}</div><table style="font-size:13px"><thead><tr><th>포맷</th><th>효율</th><th>채널명</th><th>단가</th><th>평균 조회수</th><th>조회당 비용</th><th>조합</th><th>날짜</th></tr></thead><tbody>${chs.map(ch=>{const cpv=computeListupCPV(ch),g=gradeFromCPV(cpv);const useExp=ch.expectedViews>0;const dispViews=useExp?ch.expectedViews:(ch.views||0);const expColor=useExp?'color:#2563eb':'';const dateStr=ch.date?new Date(ch.date).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',weekday:'short'}):'미정';return `<tr><td><span class="badge ${ch.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${ch.format}</span></td><td><span class="badge ${badgeClass(g)}" style="font-size:10px">${g}</span></td><td style="font-weight:500">${ch.channel}</td><td>${ch.price.toLocaleString()}원</td><td style="${expColor}">${dispViews.toLocaleString()}</td><td style="${expColor}">${cpv?cpv.toFixed(2):'-'}</td><td style="color:var(--color-text-secondary)">${ch.comboName}</td><td>${dateStr}</td></tr>`;}).join('')}</tbody></table></div>`).join('');}
 function selectAllHistory(ei){
   const entry=bookingHistory[ei];
@@ -539,6 +564,157 @@ function selectAllHistory(ei){
   _ss.anchor={ri:0,ci:0};
   _ss.cursor={ri:entry.assignments.length-1,ci:9};
   ssHighlight();
+}
+let _campaignSaveCI=-1;
+function openCampaignModal(ci){
+  _campaignSaveCI=ci;
+  const overlay=document.getElementById('campaign-modal-overlay');
+  overlay.style.display='flex';
+  document.getElementById('campaign-name-input').value='';
+  setTimeout(()=>document.getElementById('campaign-name-input').focus(),50);
+}
+function closeCampaignModal(){
+  document.getElementById('campaign-modal-overlay').style.display='none';
+  _campaignSaveCI=-1;
+}
+function confirmCampaignSave(){
+  const name=document.getElementById('campaign-name-input').value.trim();
+  if(!name){alert('이름을 입력해주세요.');return;}
+  const ci=_campaignSaveCI;
+  const combo=ci>=0&&window._combos?window._combos[ci]:null;
+  const entry={
+    savedAt:name,
+    type:'campaign',
+    combos:combo?[JSON.parse(JSON.stringify(combo))]:JSON.parse(JSON.stringify(confirmedCombos))
+  };
+  bookingHistory.unshift(entry);
+  localStorage.setItem('bookingHistory',JSON.stringify(bookingHistory));
+  closeCampaignModal();
+  alert(`"${name}" 으로 부킹 내역에 저장됐어요!`);
+}
+function startEditComboName(ci){
+  const nameEl=document.getElementById('lu-name-'+ci);
+  const inputEl=document.getElementById('lu-name-input-'+ci);
+  if(!nameEl||!inputEl)return;
+  nameEl.style.display='none';inputEl.style.display='inline';
+  inputEl.value=window._combos[ci]?.name||'';
+  inputEl.focus();inputEl.select();
+}
+function saveComboName(ci){
+  const nameEl=document.getElementById('lu-name-'+ci);
+  const inputEl=document.getElementById('lu-name-input-'+ci);
+  if(!nameEl||!inputEl)return;
+  const newName=inputEl.value.trim();
+  if(newName&&window._combos[ci])window._combos[ci].name=newName;
+  nameEl.textContent=window._combos[ci]?.name||'';
+  nameEl.style.display='';inputEl.style.display='none';
+}
+function startEditBookingComboName(ci){
+  const nameEl=document.getElementById('bk-name-'+ci);
+  const inputEl=document.getElementById('bk-name-input-'+ci);
+  if(!nameEl||!inputEl)return;
+  nameEl.style.display='none';inputEl.style.display='inline';
+  inputEl.value=confirmedCombos[ci]?.name||'';
+  inputEl.focus();inputEl.select();
+}
+function saveBookingComboName(ci){
+  const nameEl=document.getElementById('bk-name-'+ci);
+  const inputEl=document.getElementById('bk-name-input-'+ci);
+  if(!nameEl||!inputEl)return;
+  const newName=inputEl.value.trim();
+  if(newName&&confirmedCombos[ci])confirmedCombos[ci].name=newName;
+  nameEl.textContent=confirmedCombos[ci]?.name||'';
+  nameEl.style.display='';inputEl.style.display='none';
+}
+function toggleComboRestrictDropdown(mi){
+  const dd=document.getElementById('combo-restrict-dd-'+mi);
+  if(!dd)return;
+  dd.style.display=dd.style.display==='none'?'block':'none';
+}
+function updateComboRestrict(mi){
+  const dd=document.getElementById('combo-restrict-dd-'+mi);
+  if(!dd)return;
+  const checked=[...dd.querySelectorAll('input:checked')].map(c=>c.value);
+  mothers[mi].comboRestrict=checked;
+  const btn=document.querySelector(`#combo-restrict-wrap-${mi} button`);
+  if(btn)btn.textContent=checked.length?checked.join(', '):'미선택 (모든 조합)';
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('[id^="combo-restrict-wrap-"]')){
+    document.querySelectorAll('[id^="combo-restrict-dd-"]').forEach(dd=>dd.style.display='none');
+  }
+});
+function openLoadCampaignModal(){
+  const campaigns=bookingHistory.filter(e=>e.type==='campaign');
+  const el=document.getElementById('load-campaign-list');
+  if(!campaigns.length){
+    el.innerHTML='<div style="font-size:13px;color:#9ca3af;padding:16px 0;text-align:center">저장된 조합이 없어요.<br>채널 리스트업에서 💾 저장 버튼을 눌러 저장해보세요.</div>';
+  } else {
+    el.innerHTML=campaigns.map((e,i)=>{
+      const idx=bookingHistory.indexOf(e);
+      const total=e.combos?e.combos.reduce((s,c)=>s+(c.channels?.length||0),0):0;
+      return `<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:0.5px solid #e5e7eb;border-radius:8px;background:#f9fafb;cursor:pointer" onclick="toggleLoadCampaignSelect(this)">
+        <input type="checkbox" data-idx="${idx}" style="width:15px;height:15px;cursor:pointer;flex-shrink:0">
+        <div><div style="font-size:13px;font-weight:600">📋 ${e.savedAt}</div><div style="font-size:11px;color:#9ca3af;margin-top:2px">조합 ${e.combos?.length||0}개 · 채널 ${total}개</div></div>
+      </label>`;
+    }).join('');
+  }
+  document.getElementById('load-campaign-modal-overlay').style.display='flex';
+}
+function toggleLoadCampaignSelect(label){
+  const cb=label.querySelector('input[type=checkbox]');
+  if(cb)label.style.borderColor=cb.checked?'#1e3a6e':'#e5e7eb';
+}
+function closeLoadCampaignModal(){
+  document.getElementById('load-campaign-modal-overlay').style.display='none';
+}
+function loadSelectedCampaigns(){
+  const checks=[...document.querySelectorAll('#load-campaign-list input[type=checkbox]:checked')];
+  if(!checks.length){alert('불러올 조합을 선택해주세요.');return;}
+  checks.forEach(cb=>{loadCampaignToBooking(+cb.dataset.idx);});
+  closeLoadCampaignModal();
+  renderBookingTab();
+}
+function loadCampaignToBooking(idx){
+  const entry=bookingHistory[idx];
+  if(!entry||!entry.combos)return;
+  entry.combos.forEach((combo,i)=>{
+    const copy=JSON.parse(JSON.stringify(combo));
+    copy.id=Date.now()+Math.random();
+    copy.name=entry.combos.length>1?`${entry.savedAt} (${i+1})`:entry.savedAt;
+    const exists=confirmedCombos.findIndex(c=>c.id===combo.id);
+    if(exists>=0)confirmedCombos[exists]=copy;
+    else confirmedCombos.push(copy);
+  });
+  renderBookingTab();
+}
+function startEditHistoryName(ei){
+  const nameEl=document.getElementById('history-name-'+ei);
+  const inputEl=document.getElementById('history-name-input-'+ei);
+  if(!nameEl||!inputEl)return;
+  nameEl.style.display='none';
+  inputEl.style.display='inline';
+  inputEl.value=bookingHistory[ei].savedAt;
+  inputEl.focus();inputEl.select();
+}
+function saveHistoryName(ei){
+  const nameEl=document.getElementById('history-name-'+ei);
+  const inputEl=document.getElementById('history-name-input-'+ei);
+  if(!nameEl||!inputEl)return;
+  const newName=inputEl.value.trim();
+  if(newName){bookingHistory[ei].savedAt=newName;localStorage.setItem('bookingHistory',JSON.stringify(bookingHistory));}
+  nameEl.textContent=bookingHistory[ei].savedAt;
+  nameEl.style.display='';
+  inputEl.style.display='none';
+}
+function toggleHistoryEntry(ei){
+  const body=document.getElementById('history-body-'+ei);
+  const arrow=document.getElementById('history-arrow-'+ei);
+  if(!body)return;
+  const open=body.style.display==='none';
+  body.style.display=open?'block':'none';
+  if(arrow)arrow.textContent=open?'▼':'▶';
+  if(open)body.querySelectorAll('.ss-table').forEach(t=>ssAttach(t));
 }
 function renderHistoryTab(){
   const el=document.getElementById('history-content');
@@ -578,12 +754,13 @@ function renderHistoryTab(){
         return `<div class="booking-combo-card" style="margin-bottom:10px"><div class="booking-combo-header"><span style="font-weight:500;font-size:13px">${combo.name}</span><span style="font-size:12px;color:var(--color-text-secondary);margin-left:10px">${comboSummary(combo.channels)}</span>${dateStr?`<span style="font-size:12px;color:var(--color-text-secondary);margin-left:8px">${dateStr}</span>`:''}</div><table style="font-size:12px"><thead><tr><th>업체</th><th>포맷</th><th>효율</th><th>채널명</th><th>단가</th><th>평균 조회수</th><th>조회당 비용</th><th>배정 소재</th></tr></thead><tbody>${rowsHTML}</tbody></table></div>`;
       }).join('');
     }
-    return `<div style="margin-bottom:28px">
-      <div style="font-size:14px;font-weight:700;margin-bottom:8px;padding-bottom:6px;border-bottom:1.5px solid var(--color-border-secondary);display:flex;align-items:center;justify-content:space-between">
-        <span>📋 ${entry.savedAt}</span>
-        <button onclick="bookingHistory.splice(${ei},1);localStorage.setItem('bookingHistory',JSON.stringify(bookingHistory));renderHistoryTab()" style="font-size:11px;padding:2px 8px;cursor:pointer;border-radius:var(--border-radius-md);color:var(--color-text-danger);border:0.5px solid var(--color-text-danger);background:none">삭제</button>
+    const icon=entry.type==='campaign'?'📋':'📦';
+    return `<div style="margin-bottom:8px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden">
+      <div onclick="toggleHistoryEntry(${ei})" style="padding:12px 16px;background:#f9fafb;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none">
+        <span style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px"><span id="history-arrow-${ei}" style="font-size:11px;color:#9ca3af">▶</span>${icon} <span id="history-name-${ei}" style="font-size:13px;font-weight:600">${entry.savedAt}</span><input id="history-name-input-${ei}" type="text" value="${entry.savedAt}" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter')saveHistoryName(${ei})" onblur="saveHistoryName(${ei})" style="display:none;font-size:13px;font-weight:600;border:1px solid #d1d5db;border-radius:4px;padding:1px 6px;font-family:inherit;background:#fff"><button onclick="event.stopPropagation();startEditHistoryName(${ei})" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:13px;padding:0 4px;margin-left:2px" title="이름 변경"><i class="ti ti-pencil"></i></button></span>
+        <button onclick="event.stopPropagation();bookingHistory.splice(${ei},1);localStorage.setItem('bookingHistory',JSON.stringify(bookingHistory));renderHistoryTab()" style="font-size:11px;padding:2px 8px;cursor:pointer;border-radius:var(--border-radius-md);color:var(--color-text-danger);border:0.5px solid var(--color-text-danger);background:none">삭제</button>
       </div>
-      ${bodyHTML}
+      <div id="history-body-${ei}" style="display:none;padding:16px">${bodyHTML}</div>
     </div>`;
   }).join('');
   el.querySelectorAll('.ss-table').forEach(t=>ssAttach(t));
@@ -767,7 +944,7 @@ async function handleZipUpload(files){
   for(const file of fileArr){
     try{
       const zip=await JSZip.loadAsync(file);
-      const mother={id:Date.now()+Math.random(),zipName:file.name,videos:[],coverImages:[],sideImages:[],caption:'',dateRestrict:'',channelRestrict:'',ranges:[{start:'',end:''}]};
+      const mother={id:Date.now()+Math.random(),zipName:file.name,videos:[],coverImages:[],sideImages:[],caption:'',dateRestrict:'',channelRestrict:'',comboRestrict:[],ranges:[{start:'',end:''}]};
       for(const[path,zipEntry]of Object.entries(zip.files)){
         if(zipEntry.dir)continue;
         const name=path.split('/').pop();
@@ -842,9 +1019,10 @@ function renderMotherCards(){
           </div>
         </div>
         ${m.videos.map((v,vi)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.file.name}</span><input type="number" placeholder="초" min="1" value="${v.thumbSec}" onchange="mothers[${mi}].videos[${vi}].thumbSec=this.value" style="width:64px;font-size:12px;padding:3px 6px;border-radius:4px;border:0.5px solid var(--color-border-secondary);text-align:center"> <span style="font-size:11px;color:var(--color-text-tertiary)">초</span></div>`).join('')}</div>`:''}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
         <div><div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:3px">📅 지정 날짜 (쉼표 구분)</div><input type="text" placeholder="미입력 = 모든 날짜" value="${m.dateRestrict}" onchange="mothers[${mi}].dateRestrict=this.value" style="width:100%;font-size:12px;padding:5px 8px;border-radius:4px;border:0.5px solid var(--color-border-secondary)"></div>
         <div><div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:3px">📺 지정 채널 (쉼표 구분)</div><input type="text" placeholder="미입력 = 모든 채널" value="${m.channelRestrict}" onchange="mothers[${mi}].channelRestrict=this.value" style="width:100%;font-size:12px;padding:5px 8px;border-radius:4px;border:0.5px solid var(--color-border-secondary)"></div>
+        <div><div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:3px">🗂 지정 조합 <span style="color:var(--color-text-tertiary)">(미선택 = 모든 조합)</span></div><div style="position:relative" id="combo-restrict-wrap-${mi}"><button type="button" onclick="toggleComboRestrictDropdown(${mi})" style="width:100%;font-size:12px;padding:5px 8px;border-radius:4px;border:0.5px solid var(--color-border-secondary);background:#fff;text-align:left;cursor:pointer">${m.comboRestrict&&m.comboRestrict.length?m.comboRestrict.join(', '):'미선택 (모든 조합)'}</button><div id="combo-restrict-dd-${mi}" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid var(--color-border-secondary);border-radius:4px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.08);max-height:180px;overflow-y:auto;padding:6px 0">${(()=>{const combos=[...confirmedCombos.map(c=>c.name),...bookingManualRows.filter(r=>r.agency&&r.channel).map(r=>r.agency).filter((v,i,a)=>a.indexOf(v)===i)];return combos.length?combos.map(name=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:12px"><input type="checkbox" value="${name}" ${(m.comboRestrict||[]).includes(name)?'checked':''} onchange="updateComboRestrict(${mi})"> ${name}</label>`).join(''):'<div style="padding:8px 12px;font-size:12px;color:#9ca3af">확정된 조합이 없어요</div>';})()} </div></div></div>
       </div>
       <div><div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:3px">📝 캡션/해시태그</div><textarea placeholder="입력 시 배정 폴더마다 캡션_해시태그.txt 자동 생성" oninput="mothers[${mi}].caption=this.value" rows="2" style="width:100%;font-size:12px;padding:6px 8px;border-radius:4px;border:0.5px solid var(--color-border-secondary);resize:vertical;font-family:inherit">${m.caption}</textarea></div>
     </div>
@@ -896,7 +1074,7 @@ function renderLinkedSchedule(){
   const manualLinked=bookingManualRows.filter(r=>r.date&&r.channel);
   if(!confirmedCombos.length&&!manualLinked.length){el.innerHTML='<div style="font-size:13px;color:var(--color-text-tertiary)">채널 리스트업에서 조합을 확정하거나, 업체별 부킹 수동탭에서 업체별 문안 생성을 누르면 표시돼요.</div>';return;}
   const slots=getLinkedSlots();
-  el.innerHTML=`<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px">총 ${slots.length}개 슬롯</div><div style="overflow-x:auto"><table style="font-size:12px;border-collapse:collapse;min-width:400px"><thead><tr style="background:#f9fafb"><th style="padding:5px 8px;border:0.5px solid #e5e7eb">날짜</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">업체명</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">채널명</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">포맷</th></tr></thead><tbody>${slots.map(s=>`<tr><td style="padding:5px 8px;border:0.5px solid #e5e7eb">${normDate(s.date)||'미정'}</td><td style="padding:5px 8px;border:0.5px solid #e5e7eb">${s.agency}</td><td style="padding:5px 8px;border:0.5px solid #e5e7eb;font-weight:500">${s.channel}</td><td style="padding:5px 8px;border:0.5px solid #e5e7eb"><span class="badge ${s.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${s.format}</span></td></tr>`).join('')}</tbody></table></div>`;
+  el.innerHTML=`<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px">총 ${slots.length}개 슬롯</div><div style="overflow-x:auto"><table style="font-size:12px;border-collapse:collapse;min-width:500px"><thead><tr style="background:#f9fafb"><th style="padding:5px 8px;border:0.5px solid #e5e7eb">조합명</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">날짜</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">업체명</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">채널명</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">포맷</th><th style="padding:5px 8px;border:0.5px solid #e5e7eb">방식</th></tr></thead><tbody>${slots.map(s=>`<tr><td style="padding:5px 8px;border:0.5px solid #e5e7eb;color:var(--color-text-secondary);font-size:11px">${s.comboName||'-'}</td><td style="padding:5px 8px;border:0.5px solid #e5e7eb">${normDate(s.date)||'미정'}</td><td style="padding:5px 8px;border:0.5px solid #e5e7eb">${s.agency}</td><td style="padding:5px 8px;border:0.5px solid #e5e7eb;font-weight:500">${s.channel}</td><td style="padding:5px 8px;border:0.5px solid #e5e7eb"><span class="badge ${s.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${s.format}</span></td><td style="padding:5px 8px;border:0.5px solid #e5e7eb">${s.comboName?'<span style="font-size:11px;color:#2563eb;font-weight:500">연동</span>':'<span style="font-size:11px;color:#6b7280">수동</span>'}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
 function getChannelGrade(channel,format){
@@ -914,9 +1092,10 @@ function runAssignment(mode){
   for(const m of mothers){for(const v of m.videos){if(!v.thumbSec){alert(`[${m.zipName}] ${v.file.name}의 썸네일 초수를 입력해주세요.`);return;}}}
   const dups=mode==='linked'?getCrossDuplicateChannels():[];
   const preConflicts=dups.map(d=>({type:'dup_schedule',desc:`리스트업 연동탭과 수동탭에 동일 채널·동일 날짜가 겹쳐요: ${d.channel} (${d.date}, ${d.format})`}));
-  const pools=mothers.map(m=>({id:m.id,zipName:m.zipName,caption:m.caption,dateRestrict:m.dateRestrict,channelRestrict:m.channelRestrict,videos:[...m.videos.map(v=>({...v}))],coverImages:[...m.coverImages.map(f=>({...f}))],sideImages:[...m.sideImages]}));
+  const pools=mothers.map(m=>({id:m.id,zipName:m.zipName,caption:m.caption,dateRestrict:m.dateRestrict,channelRestrict:m.channelRestrict,comboRestrict:m.comboRestrict||[],videos:[...m.videos.map(v=>({...v}))],coverImages:[...m.coverImages.map(f=>({...f}))],sideImages:[...m.sideImages]}));
   const assignments=[],conflicts=[...preConflicts];
   const channelUsedMothers={}; // 채널별로 이미 쓴 마더ID들 — 이 채널엔 절대 다시 못 씀
+  const motherComboLock={}; // 마더가 처음 배정된 조합에 잠금 — 다른 조합으로 넘어가지 않음
   const motherGradeCount={};
   pools.forEach(p=>motherGradeCount[p.id]={'상':0,'중':0,'하':0});
   const sorted=[...slots].sort((a,b)=>normDate(a.date).localeCompare(normDate(b.date)));
@@ -933,6 +1112,9 @@ function runAssignment(mode){
     let eligible=baseEligible.filter(p=>{
       if(p.dateRestrict){const allowed=p.dateRestrict.split(',').map(d=>normDate(d.trim()));if(!allowed.includes(dn))return false;}
       if(p.channelRestrict){const allowed=p.channelRestrict.split(',').map(c=>c.trim());if(!allowed.includes(slot.channel))return false;}
+      if(p.comboRestrict&&p.comboRestrict.length){if(!p.comboRestrict.includes(slot.comboName||'수동'))return false;}
+      // 조합 잠금: 이 마더가 이미 다른 조합에 배정됐으면 이 슬롯엔 사용 불가
+      if(motherComboLock[p.id]!==undefined&&motherComboLock[p.id]!==(slot.comboName||'수동'))return false;
       return true;
     });
     if(!eligible.length&&baseEligible.length){
@@ -959,12 +1141,13 @@ function runAssignment(mode){
     else{file=chosen.coverImages.shift().file;sideFiles=chosen.sideImages.map(s=>s.file);}
     if(!channelUsedMothers[slot.channel])channelUsedMothers[slot.channel]=new Set();
     channelUsedMothers[slot.channel].add(chosen.id);
+    if(motherComboLock[chosen.id]===undefined)motherComboLock[chosen.id]=slot.comboName||'수동';
     motherGradeCount[chosen.id][slot.grade]++;
     assignments.push({...slot,dateNorm:dn,motherId:chosen.id,motherName:chosen.zipName,file,thumbSec,sideFiles,caption:chosen.caption,isConflict,assigned:true});
   }
   pools.forEach(p=>{
-    p.videos.forEach(v=>conflicts.push({type:'surplus',desc:`미배정 영상: [${p.zipName}] ${v.file.name}`}));
-    p.coverImages.forEach(c=>conflicts.push({type:'surplus',desc:`미배정 표지: [${p.zipName}] ${c.file.name}`}));
+    p.videos.forEach(v=>conflicts.push({type:'surplus',desc:`미배정 영상: [${p.zipName}] ${v.file.name}`,file:v.file,thumbSec:v.thumbSec,motherId:p.id,motherName:p.zipName,caption:p.caption,iformat:'릴스',sideFiles:[]}));
+    p.coverImages.forEach(c=>conflicts.push({type:'surplus',desc:`미배정 표지: [${p.zipName}] ${c.file.name}`,file:c.file,thumbSec:'',motherId:p.id,motherName:p.zipName,caption:p.caption,iformat:'배너',sideFiles:p.sideImages.map(s=>s.file)}));
   });
   const result={assignments,conflicts};
   if(mode==='linked')linkedResult=result;else manualResult=result;
@@ -1052,7 +1235,38 @@ function renderAssignmentResult(mode,result,activeTab){
 
   const tabBtn=(id,label)=>`<button onclick="renderAssignmentResult('${mode}',${mode==='linked'?'linkedResult':'manualResult'},'${id}')" style="padding:8px 16px;font-size:13px;cursor:pointer;border:none;border-bottom:${activeTab===id?'2px solid #2563eb':'2px solid transparent'};background:none;color:${activeTab===id?'#2563eb':'#6b7280'};font-weight:${activeTab===id?'600':'normal'}">${label}</button>`;
 
-  const tabContent=activeTab==='agency'?agencyHTML:activeTab==='all'?allHTML:conflictBodyHTML;
+  // 조합별 배정
+  const byCombo={};
+  assignments.forEach(a=>{
+    const key=a.comboName||'수동';
+    if(!byCombo[key])byCombo[key]=[];
+    byCombo[key].push(a);
+  });
+  const comboHTML=Object.entries(byCombo).map(([comboName,items])=>`
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f0f4ff;border-radius:8px 8px 0 0;border:0.5px solid #c7d9f5">
+        <div style="font-weight:600;font-size:13px;color:#1e3a6e">🗂 ${comboName} &nbsp;<span style="font-weight:400;font-size:12px;color:#6b7280">${items.length}개 소재</span></div>
+      </div>
+      <div style="border:0.5px solid #c7d9f5;border-top:none;border-radius:0 0 8px 8px;overflow:hidden">
+        <table class="ss-table" style="font-size:12px;width:100%;table-layout:fixed"><thead><tr><th>업체</th><th>포맷</th><th>효율</th><th>채널명</th><th>날짜</th><th>폴더명</th><th>파일명</th></tr></thead>
+        <tbody>${items.map((a,rowIdx)=>{
+          const folder=a.assigned?(a.format==='릴스'?`${a.dateNorm}_${a.channel}_썸네일${a.thumbSec}초`:`${a.dateNorm}_${a.agency}_${a.channel}`):'—';
+          const handle=a.assigned?`<span onmousedown="resDragStart(event,${a._idx},'${mode}')" style="float:right;cursor:grab;color:#9ca3af;font-size:14px;margin-left:8px;user-select:none">⠿</span>`:'';
+          const stats=getChannelStats(a.channel,a.format);
+          return `<tr data-res-idx="${a._idx}" data-res-mode="${mode}" ${a.isConflict?'class="warn-row"':''}>
+            <td data-ri="${rowIdx}" data-ci="0" style="padding:5px 8px;border:0.5px solid #e5e7eb">${a.agency}</td>
+            <td data-ri="${rowIdx}" data-ci="1" style="padding:5px 8px;border:0.5px solid #e5e7eb"><span class="badge ${a.format==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${a.format}</span></td>
+            <td data-ri="${rowIdx}" data-ci="2" style="padding:5px 8px;border:0.5px solid #e5e7eb"><span class="badge ${badgeClass(stats.grade)}" style="font-size:10px">${stats.grade}</span></td>
+            <td data-ri="${rowIdx}" data-ci="3" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-weight:500">${a.channel}</td>
+            <td data-ri="${rowIdx}" data-ci="4" style="padding:5px 8px;border:0.5px solid #e5e7eb">${a.dateNorm||'미정'}</td>
+            <td data-ri="${rowIdx}" data-ci="5" style="padding:5px 8px;border:0.5px solid #e5e7eb;color:#2563eb;font-size:11px">${folder}</td>
+            <td data-ri="${rowIdx}" data-ci="6" style="padding:5px 8px;border:0.5px solid #e5e7eb;font-size:11px">${handle}${a.assigned?a.file.name:'<span style="color:#dc2626">배정 실패</span>'}</td>
+          </tr>`;
+        }).join('')}</tbody></table>
+      </div>
+    </div>
+  `).join('');
+  const tabContent=activeTab==='agency'?agencyHTML:activeTab==='all'?allHTML:activeTab==='combo'?comboHTML:conflictBodyHTML;
 
   const motherSummary={};
   assignments.filter(a=>a.assigned).forEach(a=>{
@@ -1060,6 +1274,26 @@ function renderAssignmentResult(mode,result,activeTab){
     motherSummary[a.motherName][a.grade]=(motherSummary[a.motherName][a.grade]||0)+1;
   });
   const summaryHTML=Object.keys(motherSummary).length?`<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">${Object.entries(motherSummary).map(([name,g])=>`<div class="card" style="padding:8px 12px;font-size:12px;display:flex;align-items:center;gap:8px"><b>📦 ${name}</b><span class="badge badge-up" style="font-size:10px">상 ${g['상']}</span><span class="badge badge-mid" style="font-size:10px">중 ${g['중']}</span><span class="badge badge-dn" style="font-size:10px">하 ${g['하']}</span></div>`).join('')}</div>`:'';
+
+  const surplusItems=conflicts.filter(c=>c.type==='surplus'&&c.file);
+  const surplusHTML=surplusItems.length?`
+    <div style="margin-bottom:16px;border:0.5px solid #fcd34d;border-radius:8px;overflow:hidden">
+      <div style="padding:8px 14px;background:#fffbeb;display:flex;align-items:center;gap:8px">
+        <span style="font-weight:600;font-size:13px;color:#92400e">📦 미배정 소재 풀</span>
+        <span style="font-size:11px;color:#92400e">${surplusItems.length}개 — 핸들을 드래그해서 배정 실패 슬롯에 배정하세요</span>
+      </div>
+      <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px">
+        ${surplusItems.map((c,si)=>`
+          <div data-surplus-idx="${si}" data-surplus-mode="${mode}" style="display:flex;align-items:center;gap:6px;background:#fff;border:0.5px solid #e5e7eb;border-radius:6px;padding:5px 10px;font-size:11px">
+            <span onmousedown="surplusDragStart(event,${si},'${mode}')" style="cursor:grab;color:#9ca3af;font-size:14px;user-select:none">⠿</span>
+            <span class="badge ${c.iformat==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${c.iformat}</span>
+            <span style="color:#374151">[${c.motherName}]</span>
+            <span style="color:#6b7280">${c.file.name}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `:'';
 
   el.innerHTML=`
     <div style="margin-top:8px">
@@ -1070,9 +1304,9 @@ function renderAssignmentResult(mode,result,activeTab){
           <button onclick="saveToHistory('${mode}')" class="update-btn" style="font-size:12px;color:#16a34a"><i class="ti ti-device-floppy"></i> 부킹 내역 저장</button>
         </div>
       </div>
-      ${summaryHTML}
+      ${summaryHTML}${surplusHTML}
       <div style="border-bottom:1px solid #e5e7eb;margin-bottom:16px">
-        ${tabBtn('agency','업체별 배정')}${tabBtn('all','전체 배정표')}${tabBtn('conflict','충돌 처리')}
+        ${tabBtn('agency','업체별 배정')}${tabBtn('all','전체 배정표')}${tabBtn('combo','조합별 배정')}${tabBtn('conflict','충돌 처리')}
       </div>
       <div>${tabContent}</div>
     </div>
@@ -1088,6 +1322,63 @@ function matDrop(event,toIdx,mode){
   if(_matDragIdx<0||_matDragIdx===toIdx||_matDragMode!==mode)return;
   resSwapMaterial(_matDragIdx,toIdx,mode);
   _matDragIdx=-1;
+}
+
+function surplusDragStart(event,surplusIdx,mode){
+  event.preventDefault();
+  const result=mode==='linked'?linkedResult:manualResult;
+  const surplusItems=result.conflicts.filter(c=>c.type==='surplus'&&c.file);
+  const item=surplusItems[surplusIdx];
+  if(!item)return;
+  const ghost=document.createElement('div');
+  ghost.style.cssText='position:fixed;z-index:9999;background:#fffbeb;border:1.5px solid #f59e0b;border-radius:6px;padding:5px 14px;font-size:12px;pointer-events:none;color:#92400e;font-weight:500;box-shadow:0 2px 8px rgba(245,158,11,0.2)';
+  ghost.textContent='미배정 소재 배정 중...';
+  document.body.appendChild(ghost);
+  let mouseY=event.clientY;
+  const EDGE=80,MAXSPEED=18;
+  const scrollTimer=setInterval(()=>{
+    const h=window.innerHeight;
+    if(mouseY<EDGE)window.scrollBy(0,-Math.ceil((EDGE-mouseY)/EDGE*MAXSPEED));
+    else if(mouseY>h-EDGE)window.scrollBy(0,Math.ceil((mouseY-(h-EDGE))/EDGE*MAXSPEED));
+  },16);
+  const onMove=e=>{
+    mouseY=e.clientY;
+    ghost.style.left=(e.clientX+14)+'px';
+    ghost.style.top=(e.clientY-10)+'px';
+    document.querySelectorAll('tr.res-drag-over').forEach(r=>r.classList.remove('res-drag-over'));
+    const tr=document.elementFromPoint(e.clientX,e.clientY)?.closest('tr[data-res-idx]');
+    if(tr&&tr.dataset.resMode===mode)tr.classList.add('res-drag-over');
+  };
+  const onUp=e=>{
+    document.removeEventListener('mousemove',onMove);
+    clearInterval(scrollTimer);
+    ghost.remove();
+    document.querySelectorAll('tr.res-drag-over').forEach(r=>r.classList.remove('res-drag-over'));
+    const tr=document.elementFromPoint(e.clientX,e.clientY)?.closest('tr[data-res-idx]');
+    if(tr&&tr.dataset.resMode===mode)surplusAssignMaterial(surplusIdx,+tr.dataset.resIdx,mode);
+  };
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp,{once:true});
+}
+
+function surplusAssignMaterial(surplusIdx,toIdx,mode){
+  const result=mode==='linked'?linkedResult:manualResult;
+  const surplusItems=result.conflicts.filter(c=>c.type==='surplus'&&c.file);
+  const item=surplusItems[surplusIdx];
+  const slot=result.assignments[toIdx];
+  if(!item||!slot)return;
+  if(slot.format!==item.iformat){alert('같은 포맷(릴스↔릴스, 배너↔배너)끼리만 배정할 수 있어요.');return;}
+  // 기존에 슬롯에 배정돼 있던 소재가 있으면 surplus로 돌려보냄
+  if(slot.assigned){
+    const idx=result.conflicts.indexOf(item);
+    result.conflicts.splice(idx,1,{type:'surplus',desc:`미배정 ${slot.format==='릴스'?'영상':'표지'}: [${slot.motherName}] ${slot.file.name}`,file:slot.file,thumbSec:slot.thumbSec,motherId:slot.motherId,motherName:slot.motherName,caption:slot.caption,iformat:slot.format,sideFiles:slot.sideFiles||[]});
+  } else {
+    // 그냥 surplus에서 제거
+    const idx=result.conflicts.indexOf(item);
+    result.conflicts.splice(idx,1);
+  }
+  slot.file=item.file;slot.thumbSec=item.thumbSec;slot.motherId=item.motherId;slot.motherName=item.motherName;slot.caption=item.caption;slot.sideFiles=item.sideFiles||[];slot.assigned=true;slot.isConflict=false;
+  renderAssignmentResult(mode,result,_resActiveTab[mode]);
 }
 
 function resSwapMaterial(fromIdx,toIdx,mode){
