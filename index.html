@@ -1272,6 +1272,7 @@ function renderAssignmentResult(mode,result,activeTab){
     <div style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f0f4ff;border-radius:8px 8px 0 0;border:0.5px solid #c7d9f5">
         <div style="font-weight:600;font-size:13px;color:#1e3a6e">🗂 ${comboName} &nbsp;<span style="font-weight:400;font-size:12px;color:#6b7280">${items.length}개 소재</span></div>
+        <button onclick="downloadComboZip('${mode}','${comboName.replace(/'/g,"\\'")}',this)" class="update-btn" style="font-size:12px"><i class="ti ti-download"></i> ZIP</button>
       </div>
       <div style="border:0.5px solid #c7d9f5;border-top:none;border-radius:0 0 8px 8px;overflow:hidden">
         <table class="ss-table" style="font-size:12px;width:100%;table-layout:fixed"><thead><tr><th>업체</th><th>포맷</th><th>효율</th><th>채널명</th><th>날짜</th><th>폴더명</th><th>파일명</th></tr></thead>
@@ -1468,6 +1469,30 @@ function resDragStart(event,fromIdx,mode){
   };
   document.addEventListener('mousemove',onMove);
   document.addEventListener('mouseup',onUp,{once:true});
+}
+
+async function downloadComboZip(mode,comboName,btn){
+  if(typeof JSZip==='undefined'){alert('JSZip 라이브러리가 필요해요.');return;}
+  const result=mode==='linked'?linkedResult:manualResult;
+  if(!result)return;
+  const items=result.assignments.filter(a=>a.assigned&&(a.comboName||'수동')===comboName);
+  if(!items.length){alert('다운로드할 파일이 없어요.');return;}
+  const origHTML=btn?btn.innerHTML:null;
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2 spinning" style="font-size:14px"></i> 압축 중...';}
+  try{
+    const zip=new JSZip();
+    for(const a of items){
+      const folderName=a.format==='릴스'?`${a.dateNorm}_${a.channel}_썸네일${a.thumbSec}초`:`${a.dateNorm}_${a.agency}_${a.channel}`;
+      const folder=zip.folder(folderName);
+      folder.file(a.file.name,a.file);
+      if(a.sideFiles)a.sideFiles.forEach(f=>folder.file(f.name,f));
+      if(a.caption)folder.file('캡션_해시태그.txt',a.caption);
+    }
+    const blob=await zip.generateAsync({type:'blob'});
+    const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`${comboName}.zip`;link.click();
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML=origHTML;}
+  }
 }
 
 async function downloadSurplusZip(mode,btn){
