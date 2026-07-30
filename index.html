@@ -1140,9 +1140,13 @@ function runAssignment(mode){
       return true;
     });
     if(!eligible.length&&baseEligible.length){
-      eligible=baseEligible;
-      isConflict=true;
-      conflicts.push({type:'lock_ignored',desc:`${slot.channel} (${dn}): 날짜/채널 lock 무시 배정`});
+      // 날짜/채널 제한만 무시, comboRestrict·조합잠금은 반드시 유지
+      const fallback=baseEligible.filter(p=>{
+        if(p.comboRestrict&&p.comboRestrict.length){if(!p.comboRestrict.includes(slot.comboName||'수동'))return false;}
+        if(motherComboLock[p.id]!==undefined&&motherComboLock[p.id]!==(slot.comboName||'수동'))return false;
+        return true;
+      });
+      if(fallback.length){eligible=fallback;isConflict=true;conflicts.push({type:'lock_ignored',desc:`${slot.channel} (${dn}): 날짜/채널 lock 무시 배정`});}
     }
     if(!eligible.length){
       assignments.push({...slot,dateNorm:dn,assigned:false});
