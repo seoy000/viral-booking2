@@ -1281,14 +1281,15 @@ function renderAssignmentResult(mode,result,activeTab){
       <div style="padding:8px 14px;background:#fffbeb;display:flex;align-items:center;gap:8px">
         <span style="font-weight:600;font-size:13px;color:#92400e">📦 미배정 소재 풀</span>
         <span style="font-size:11px;color:#92400e">${surplusItems.length}개 — 핸들을 드래그해서 배정 실패 슬롯에 배정하세요</span>
+        <button onclick="downloadSurplusZip('${mode}',this)" class="update-btn" style="margin-left:auto;font-size:12px"><i class="ti ti-download"></i> ZIP 다운로드</button>
       </div>
       <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px">
         ${surplusItems.map((c,si)=>`
           <div data-surplus-idx="${si}" data-surplus-mode="${mode}" style="display:flex;align-items:center;gap:6px;background:#fff;border:0.5px solid #e5e7eb;border-radius:6px;padding:5px 10px;font-size:11px">
-            <span onmousedown="surplusDragStart(event,${si},'${mode}')" style="cursor:grab;color:#9ca3af;font-size:14px;user-select:none">⠿</span>
             <span class="badge ${c.iformat==='릴스'?'badge-reels':'badge-banner'}" style="font-size:10px">${c.iformat}</span>
             <span style="color:#374151">[${c.motherName}]</span>
             <span style="color:#6b7280">${c.file.name}</span>
+            <span onmousedown="surplusDragStart(event,${si},'${mode}')" style="cursor:grab;color:#9ca3af;font-size:14px;user-select:none">⠿</span>
           </div>
         `).join('')}
       </div>
@@ -1441,6 +1442,27 @@ function resDragStart(event,fromIdx,mode){
   };
   document.addEventListener('mousemove',onMove);
   document.addEventListener('mouseup',onUp,{once:true});
+}
+
+async function downloadSurplusZip(mode,btn){
+  if(typeof JSZip==='undefined'){alert('JSZip 라이브러리가 필요해요.');return;}
+  const result=mode==='linked'?linkedResult:manualResult;
+  if(!result)return;
+  const items=result.conflicts.filter(c=>c.type==='surplus'&&c.file);
+  if(!items.length){alert('미배정 소재가 없어요.');return;}
+  const origHTML=btn?btn.innerHTML:null;
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2 spinning" style="font-size:14px"></i> 압축 중...';}
+  try{
+    const zip=new JSZip();
+    const folder=zip.folder('미배정_소재');
+    items.forEach(c=>{
+      folder.file(c.file.name,c.file);
+    });
+    const blob=await zip.generateAsync({type:'blob'});
+    const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download='미배정_소재.zip';link.click();
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML=origHTML;}
+  }
 }
 
 async function downloadAgencyZip(mode,agency,btn){
