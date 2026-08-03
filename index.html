@@ -6,6 +6,7 @@
 <title>바이럴 채널 부킹 시스템</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a1a;background:#f5f5f5;font-size:13px}
@@ -148,9 +149,9 @@ tr.res-drag-over td{background:#dbeafe !important;outline:2px solid #2563eb;outl
     </div>
   </div>
   <div class="dash-grid">
-    <div class="dash-card"><div class="dash-label"><span class="badge badge-reels" style="font-size:10px;margin-right:4px">릴스</span>예상조회수 TOP 3</div><div id="top3-reels"><div style="font-size:12px;color:var(--color-text-tertiary)">데이터를 불러오면 표시돼요</div></div></div>
-    <div class="dash-card"><div class="dash-label"><span class="badge badge-banner" style="font-size:10px;margin-right:4px">배너</span>예상조회수 TOP 3</div><div id="top3-banner"><div style="font-size:12px;color:var(--color-text-tertiary)">데이터를 불러오면 표시돼요</div></div></div>
-    <div class="dash-card" style="display:flex;flex-direction:column;justify-content:center"><div class="dash-label">전체 채널</div><div class="dash-val" id="s-total">-</div></div>
+    <div class="dash-card"><div class="dash-label"><span class="badge badge-reels" style="font-size:10px;margin-right:4px">릴스</span>예상조회수 TOP 5</div><div id="top3-reels"><div style="font-size:12px;color:var(--color-text-tertiary)">데이터를 불러오면 표시돼요</div></div></div>
+    <div class="dash-card"><div class="dash-label"><span class="badge badge-banner" style="font-size:10px;margin-right:4px">배너</span>예상조회수 TOP 5</div><div id="top3-banner"><div style="font-size:12px;color:var(--color-text-tertiary)">데이터를 불러오면 표시돼요</div></div></div>
+    <div class="dash-card" style="display:flex;flex-direction:column;justify-content:center"><div class="dash-label">전체 채널</div><div class="dash-val" id="s-total">-</div><div id="s-total-detail" style="font-size:12px;color:#6b7280;margin-top:4px"></div></div>
   </div>
   <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:8px"><i class="ti ti-pencil" style="font-size:11px"></i> 셀을 클릭하면 바로 수정할 수 있어요</div>
   <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:8px">📍 매주 월요일 오전 8시, 콘텐츠 대시보드 연동 시트를 참고해 예상조회수와 예상 CPV가 업데이트 돼요.</div>
@@ -450,8 +451,14 @@ function badgeClass(g){if(g==='상')return 'badge-up';if(g==='중')return 'badge
 function startTimer(){timerSeconds=0;document.getElementById('timer-area').innerHTML=`<span class="timer-badge"><i class="ti ti-clock pulsing" style="font-size:13px"></i> <span id="timer-count">0</span>초</span>`;timerInterval=setInterval(()=>{timerSeconds++;const el=document.getElementById('timer-count');if(el)el.textContent=timerSeconds;},1000);}
 function stopTimer(){clearInterval(timerInterval);timerInterval=null;document.getElementById('timer-area').innerHTML='';}
 function runUpdate(){if(timerInterval)return;const icon=document.getElementById('refresh-icon'),btn=document.getElementById('update-btn');icon.classList.add('spinning');btn.disabled=true;startTimer();(savedSheetUrl?syncSheets(savedSheetUrl):Promise.resolve()).then(()=>{channelDB.forEach(r=>{const base=r.views||50000;const s=Array.from({length:10},()=>base*(0.7+Math.random()*0.6));const med=[...s].sort((a,b)=>a-b)[4];const f=s.filter(v=>v<med*3);r.views=Math.round(f.reduce((a,b)=>a+b,0)/f.length);});document.getElementById('update-time').textContent='마지막 업데이트: '+new Date().toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});icon.classList.remove('spinning');btn.disabled=false;stopTimer();renderTable();updateStats();});}
-function renderTop3(elId,format){const medals=['🥇','🥈','🥉'];const top3=channelDB.filter(r=>r.format===format&&r.expectedViews>0).sort((a,b)=>b.expectedViews-a.expectedViews).slice(0,3);document.getElementById(elId).innerHTML=top3.length?top3.map((r,i)=>`<div class="top3-row"><span style="font-size:11px;width:20px;flex-shrink:0">${medals[i]}</span><span class="top3-name">${r.channel}</span><span class="top3-cpv">${r.expectedViews.toLocaleString()}</span></div>`).join(''):'<div style="font-size:12px;color:var(--color-text-tertiary)">예상조회수 데이터 없음</div>';}
-function updateStats(){document.getElementById('s-total').textContent=channelDB.length;renderTop3('top3-reels','릴스');renderTop3('top3-banner','배너');}
+function renderTop3(elId,format){const medals=['🥇','🥈','🥉','4️⃣','5️⃣'];const top5=channelDB.filter(r=>r.format===format&&r.expectedViews>0).sort((a,b)=>b.expectedViews-a.expectedViews).slice(0,5);document.getElementById(elId).innerHTML=top5.length?top5.map((r,i)=>{const ecpv=r.expectedViews>0&&r.price>0?(r.price/r.expectedViews).toFixed(2):'-';return`<div class="top3-row"><span style="font-size:11px;width:20px;flex-shrink:0">${medals[i]}</span><span class="top3-name">${r.channel}</span><span class="top3-cpv">${r.expectedViews.toLocaleString()}</span><span style="font-size:11px;color:#6b7280;margin-left:8px;flex-shrink:0">(${ecpv})</span></div>`;}).join(''):'<div style="font-size:12px;color:var(--color-text-tertiary)">예상조회수 데이터 없음</div>';}
+function updateStats(){
+  const reels=channelDB.filter(r=>r.format==='릴스').length;
+  const banner=channelDB.filter(r=>r.format==='배너').length;
+  document.getElementById('s-total').textContent=channelDB.length;
+  document.getElementById('s-total-detail').textContent=`릴스 ${reels}개 · 배너 ${banner}개`;
+  renderTop3('top3-reels','릴스');renderTop3('top3-banner','배너');
+}
 let effSortState={key:null,asc:true};
 function effSort(key){if(effSortState.key===key){effSortState.asc=!effSortState.asc;}else{effSortState.key=key;effSortState.asc=true;}document.querySelectorAll('[id^="eff-arr-"]').forEach(el=>{el.textContent='↕';el.style.color='#ccc';});const arr=document.getElementById('eff-arr-'+key);if(arr){arr.textContent=effSortState.asc?'↑':'↓';arr.style.color='#2563eb';}renderTable();}
 function renderTable(){const fmts=getChecked('filter-format-cb');const grades=getChecked('filter-grade-cb');const agencies=getChecked('filter-agency-cb');const sort=document.getElementById('sort-by').value;const search=(document.getElementById('eff-search')?.value||'').trim().toLowerCase();updateFilterLabels();let rows=channelDB.filter(r=>(fmts.length===0||fmts.includes(r.format))&&(grades.length===0||grades.includes(gradeFromCPV(computeCPV(r))))&&(agencies.length===0||agencies.includes(r.agency))&&(!search||r.channel.toLowerCase().includes(search)||r.agency.toLowerCase().includes(search)));if(effSortState.key){const k=effSortState.key,asc=effSortState.asc;rows.sort((a,b)=>{let va,vb;if(k==='cpv'){va=computeCPV(a)||999;vb=computeCPV(b)||999;}else if(k==='ecpv'){va=a.expectedViews>0?a.price/a.expectedViews:999;vb=b.expectedViews>0?b.price/b.expectedViews:999;}else if(k==='price'){va=a.price;vb=b.price;}else if(k==='views'){va=a.views||0;vb=b.views||0;}else if(k==='expectedViews'){va=a.expectedViews||0;vb=b.expectedViews||0;}else if(k==='grade'){const o={상:0,중:1,하:2,'-':3};va=o[gradeFromCPV(computeCPV(a))]??3;vb=o[gradeFromCPV(computeCPV(b))]??3;}else{va=(a[k]||'').toString();vb=(b[k]||'').toString();return asc?va.localeCompare(vb):vb.localeCompare(va);}return asc?va-vb:vb-va;});}else if(sort==='cpv')rows.sort((a,b)=>(computeCPV(a)||999)-(computeCPV(b)||999));else if(sort==='price')rows.sort((a,b)=>a.price-b.price);else if(sort==='views')rows.sort((a,b)=>(b.views||0)-(a.views||0));else if(sort==='channel')rows.sort((a,b)=>a.channel.localeCompare(b.channel));else rows.sort((a,b)=>a.agency.localeCompare(b.agency)||a.channel.localeCompare(b.channel));const tbody=document.getElementById('channel-tbody');if(!rows.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--color-text-tertiary);padding:24px">조건에 맞는 채널이 없습니다</td></tr>';return;}tbody.innerHTML=rows.map(r=>{const idx=channelDB.indexOf(r),cpv=computeCPV(r),g=gradeFromCPV(cpv);const ecpv=r.expectedViews>0?(r.price/r.expectedViews).toFixed(2):'-';return `<tr><td><input class="editable" value="${r.agency}" onchange="channelDB[${idx}].agency=this.value;updateAgencyFilter();updateStats()" onclick="this.select()"></td><td><select style="font-size:12px;padding:2px 4px;border-radius:4px;height:26px;border:none;background:transparent;cursor:pointer" onchange="channelDB[${idx}].format=this.value;renderTable();updateStats()"><option value="릴스" ${r.format==='릴스'?'selected':''}>릴스</option><option value="배너" ${r.format==='배너'?'selected':''}>배너</option></select></td><td><span class="badge ${badgeClass(g)}">${g}</span></td><td><input class="editable" style="font-weight:500" value="${r.channel}" onchange="channelDB[${idx}].channel=this.value" onclick="this.select()"></td><td><input class="editable-num" value="${r.price>0?r.price.toLocaleString():''}" type="text" placeholder="-" onchange="channelDB[${idx}].price=parseInt(this.value.replace(/,/g,''))||0;renderTable();updateStats()" onclick="this.select()"></td><td><input class="editable-num" value="${r.views>0?r.views.toLocaleString():''}" type="text" placeholder="-" onchange="channelDB[${idx}].views=parseInt(this.value.replace(/,/g,''))||0;renderTable();updateStats()" onclick="this.select()"></td><td style="font-weight:500;color:${r.expectedViews>0?'#2563eb':'var(--color-text-tertiary)'}">${r.expectedViews>0?r.expectedViews.toLocaleString():'-'}</td><td style="font-weight:500">${cpv?cpv.toFixed(2):'-'}</td><td style="font-weight:500;color:${ecpv!=='-'?'#2563eb':'var(--color-text-tertiary)'}">${ecpv}</td></tr>`;}).join('');}
@@ -1211,7 +1218,10 @@ function renderAssignmentResult(mode,result,activeTab){
     <div style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#eef4ff;border-radius:8px 8px 0 0;border:0.5px solid #c7d9f5">
         <div style="font-weight:600;font-size:13px;color:#1e3a6e">🗂 ${agency} &nbsp;<span style="font-weight:400;font-size:12px;color:#6b7280">${items.length}개 소재</span></div>
-        <button onclick="downloadAgencyZip('${mode}','${agency.replace(/'/g,"\\'")}',this)" class="update-btn" style="font-size:12px"><i class="ti ti-download"></i> ZIP</button>
+        <div style="display:flex;gap:4px">
+          <button onclick="downloadAgencyZip('${mode}','${agency.replace(/'/g,"\\'")}',this)" class="update-btn" style="font-size:12px"><i class="ti ti-download"></i> ZIP</button>
+          <button onclick="driveAgencyZip('${mode}','${agency.replace(/'/g,"\\'")}',this)" class="update-btn" style="font-size:12px;color:#1a73e8;border-color:#1a73e8"><i class="ti ti-brand-google-drive"></i> 드라이브</button>
+        </div>
       </div>
       <div style="border:0.5px solid #c7d9f5;border-top:none;border-radius:0 0 8px 8px;overflow:hidden">
         <table class="ss-table" id="ss-agency-${agency.replace(/[^a-z0-9]/gi,'_')}" style="font-size:12px;table-layout:fixed;width:100%"><thead><tr><th style="width:50px">포맷</th><th style="width:50px">효율</th><th style="width:130px">채널명</th><th style="width:70px">단가</th><th style="width:80px">평균조회수</th><th style="width:60px">조회당비용</th><th style="width:90px">날짜</th><th style="width:200px">폴더명</th><th>파일명</th></tr></thead>
@@ -1272,7 +1282,10 @@ function renderAssignmentResult(mode,result,activeTab){
     <div style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f0f4ff;border-radius:8px 8px 0 0;border:0.5px solid #c7d9f5">
         <div style="font-weight:600;font-size:13px;color:#1e3a6e">🗂 ${comboName} &nbsp;<span style="font-weight:400;font-size:12px;color:#6b7280">${items.length}개 소재</span></div>
-        <button onclick="downloadComboZip('${mode}','${comboName.replace(/'/g,"\\'")}',this)" class="update-btn" style="font-size:12px"><i class="ti ti-download"></i> ZIP</button>
+        <div style="display:flex;gap:4px">
+          <button onclick="downloadComboZip('${mode}','${comboName.replace(/'/g,"\\'")}',this)" class="update-btn" style="font-size:12px"><i class="ti ti-download"></i> ZIP</button>
+          <button onclick="driveComboZip('${mode}','${comboName.replace(/'/g,"\\'")}',this)" class="update-btn" style="font-size:12px;color:#1a73e8;border-color:#1a73e8"><i class="ti ti-brand-google-drive"></i> 드라이브</button>
+        </div>
       </div>
       <div style="border:0.5px solid #c7d9f5;border-top:none;border-radius:0 0 8px 8px;overflow:hidden">
         <table class="ss-table" style="font-size:12px;width:100%;table-layout:fixed"><thead><tr><th>업체</th><th>포맷</th><th>효율</th><th>채널명</th><th>날짜</th><th>폴더명</th><th>파일명</th></tr></thead>
@@ -1308,7 +1321,10 @@ function renderAssignmentResult(mode,result,activeTab){
       <div style="padding:8px 14px;background:#fffbeb;display:flex;align-items:center;gap:8px">
         <span style="font-weight:600;font-size:13px;color:#92400e">📦 미배정 소재 풀</span>
         <span style="font-size:11px;color:#92400e">${surplusItems.length}개 — 핸들을 드래그해서 배정 실패 슬롯에 배정하세요</span>
-        <button onclick="downloadSurplusZip('${mode}',this)" class="update-btn" style="margin-left:auto;font-size:12px"><i class="ti ti-download"></i> ZIP 다운로드</button>
+        <div style="display:flex;gap:4px;margin-left:auto">
+          <button onclick="downloadSurplusZip('${mode}',this)" class="update-btn" style="font-size:12px"><i class="ti ti-download"></i> ZIP 다운로드</button>
+          <button onclick="driveSurplusZip('${mode}',this)" class="update-btn" style="font-size:12px;color:#1a73e8;border-color:#1a73e8"><i class="ti ti-brand-google-drive"></i> 드라이브</button>
+        </div>
       </div>
       <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px">
         ${surplusItems.map((c,si)=>`
@@ -1328,7 +1344,10 @@ function renderAssignmentResult(mode,result,activeTab){
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div style="font-size:14px;font-weight:600">④ 결과 확인</div>
         <div style="display:flex;gap:8px">
-          <button onclick="downloadAllZip('${mode}',this)" class="update-btn" style="font-size:12px"><i class="ti ti-download"></i> 업체별 ZIP 일괄</button>
+          <div style="display:flex;gap:4px">
+            <button onclick="downloadAllZip('${mode}',this)" class="update-btn" style="font-size:12px"><i class="ti ti-download"></i> 업체별 ZIP 일괄</button>
+            <button onclick="driveAllZip('${mode}',this)" class="update-btn" style="font-size:12px;color:#1a73e8;border-color:#1a73e8"><i class="ti ti-brand-google-drive"></i> 드라이브</button>
+          </div>
           <button onclick="saveToHistory('${mode}')" class="update-btn" style="font-size:12px;color:#16a34a"><i class="ti ti-device-floppy"></i> 부킹 내역 저장</button>
         </div>
       </div>
@@ -1516,6 +1535,141 @@ async function downloadSurplusZip(mode,btn){
   }
 }
 
+const GDRIVE_CLIENT_ID='956930028590-6su4h8d0m7pg7qelkip8647addnj4dko.apps.googleusercontent.com';
+let _gToken=null;
+function getGToken(){
+  return new Promise((resolve,reject)=>{
+    if(_gToken&&_gToken.expires>Date.now()){return resolve(_gToken.token);}
+    const client=google.accounts.oauth2.initTokenClient({
+      client_id:GDRIVE_CLIENT_ID,
+      scope:'https://www.googleapis.com/auth/drive.file',
+      callback:(resp)=>{
+        if(resp.error){return reject(resp.error);}
+        _gToken={token:resp.access_token,expires:Date.now()+(resp.expires_in-60)*1000};
+        resolve(resp.access_token);
+      }
+    });
+    client.requestAccessToken();
+  });
+}
+async function uploadToDrive(blob,filename,btn){
+  const origHTML=btn?btn.innerHTML:null;
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2 spinning" style="font-size:14px"></i> 업로드 중...';}
+  try{
+    const token=await getGToken();
+    const meta={name:filename,mimeType:'application/zip'};
+    const form=new FormData();
+    form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
+    form.append('file',blob);
+    const res=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{Authorization:'Bearer '+token},body:form});
+    const file=await res.json();
+    if(!file.id)throw new Error('업로드 실패');
+    await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}/permissions`,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({role:'reader',type:'anyone'})});
+    const link=`https://drive.google.com/file/d/${file.id}/view?usp=sharing`;
+    await navigator.clipboard.writeText(link);
+    alert(`✅ 업로드 완료!\n링크가 클립보드에 복사됐어요:\n${link}`);
+  }catch(e){
+    alert('구글 드라이브 업로드 실패: '+e);
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML=origHTML;}
+  }
+}
+
+async function driveAllZip(mode,btn){
+  if(typeof JSZip==='undefined'){alert('JSZip 라이브러리가 필요해요.');return;}
+  const result=mode==='linked'?linkedResult:manualResult;
+  if(!result)return;
+  const agencies=[...new Set(result.assignments.filter(a=>a.assigned).map(a=>a.agency))];
+  if(!agencies.length){alert('업로드할 파일이 없어요.');return;}
+  const origHTML=btn?btn.innerHTML:null;
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2 spinning" style="font-size:14px"></i> 압축 중...';}
+  try{
+    const outer=new JSZip();
+    for(const agency of agencies){
+      const items=result.assignments.filter(a=>a.agency===agency&&a.assigned);
+      const agencyFolder=outer.folder(agency);
+      for(const a of items){
+        const folderName=a.format==='릴스'?`${a.dateNorm}_${a.channel}_썸네일${a.thumbSec}초`:`${a.dateNorm}_${a.agency}_${a.channel}`;
+        const folder=agencyFolder.folder(folderName);
+        folder.file(a.file.name,a.file);
+        if(a.sideFiles)a.sideFiles.forEach(f=>folder.file(f.name,f));
+        if(a.caption)folder.file('캡션_해시태그.txt',a.caption);
+      }
+    }
+    const blob=await outer.generateAsync({type:'blob'});
+    const filename=`전체_소재배정_${new Date().toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'}).replace(/\.\s*/g,'').replace(/\./,'')}.zip`;
+    if(btn)btn.innerHTML=origHTML;
+    await uploadToDrive(blob,filename,btn);
+  }catch(e){alert('오류: '+e);if(btn){btn.disabled=false;btn.innerHTML=origHTML;}}
+}
+
+async function driveComboZip(mode,comboName,btn){
+  if(typeof JSZip==='undefined'){alert('JSZip 라이브러리가 필요해요.');return;}
+  const result=mode==='linked'?linkedResult:manualResult;
+  if(!result)return;
+  const items=result.assignments.filter(a=>a.assigned&&(a.comboName||'수동')===comboName);
+  if(!items.length){alert('업로드할 파일이 없어요.');return;}
+  const origHTML=btn?btn.innerHTML:null;
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2 spinning" style="font-size:14px"></i> 압축 중...';}
+  try{
+    const zip=new JSZip();
+    for(const a of items){
+      const folderName=a.format==='릴스'?`${a.dateNorm}_${a.channel}_썸네일${a.thumbSec}초`:`${a.dateNorm}_${a.agency}_${a.channel}`;
+      const folder=zip.folder(folderName);
+      folder.file(a.file.name,a.file);
+      if(a.sideFiles)a.sideFiles.forEach(f=>folder.file(f.name,f));
+      if(a.caption)folder.file('캡션_해시태그.txt',a.caption);
+    }
+    const blob=await zip.generateAsync({type:'blob'});
+    if(btn)btn.innerHTML=origHTML;
+    await uploadToDrive(blob,`${comboName}.zip`,btn);
+  }catch(e){alert('오류: '+e);if(btn){btn.disabled=false;btn.innerHTML=origHTML;}}
+}
+
+async function driveSurplusZip(mode,btn){
+  if(typeof JSZip==='undefined'){alert('JSZip 라이브러리가 필요해요.');return;}
+  const result=mode==='linked'?linkedResult:manualResult;
+  if(!result)return;
+  const items=result.conflicts.filter(c=>c.type==='surplus'&&c.file);
+  if(!items.length){alert('미배정 소재가 없어요.');return;}
+  const origHTML=btn?btn.innerHTML:null;
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2 spinning" style="font-size:14px"></i> 압축 중...';}
+  try{
+    const zip=new JSZip();
+    const folder=zip.folder('미배정_소재');
+    items.forEach(c=>{folder.file(c.file.name,c.file);});
+    const blob=await zip.generateAsync({type:'blob'});
+    if(btn)btn.innerHTML=origHTML;
+    await uploadToDrive(blob,'미배정_소재.zip',btn);
+  }catch(e){alert('오류: '+e);if(btn){btn.disabled=false;btn.innerHTML=origHTML;}}
+}
+
+async function driveAgencyZip(mode,agency,btn){
+  if(typeof JSZip==='undefined'){alert('JSZip 라이브러리가 필요해요.');return;}
+  const result=mode==='linked'?linkedResult:manualResult;
+  if(!result)return;
+  const items=result.assignments.filter(a=>a.agency===agency&&a.assigned);
+  if(!items.length){alert('업로드할 파일이 없어요.');return;}
+  const origHTML=btn?btn.innerHTML:null;
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2 spinning" style="font-size:14px"></i> 압축 중...';}
+  try{
+    const zip=new JSZip();
+    for(const a of items){
+      const folderName=a.format==='릴스'?`${a.dateNorm}_${a.channel}_썸네일${a.thumbSec}초`:`${a.dateNorm}_${a.agency}_${a.channel}`;
+      const folder=zip.folder(folderName);
+      folder.file(a.file.name,a.file);
+      if(a.sideFiles)a.sideFiles.forEach(f=>folder.file(f.name,f));
+      if(a.caption)folder.file('캡션_해시태그.txt',a.caption);
+    }
+    const blob=await zip.generateAsync({type:'blob'});
+    if(btn)btn.innerHTML=origHTML;
+    await uploadToDrive(blob,`${agency}.zip`,btn);
+  }catch(e){
+    alert('오류: '+e);
+    if(btn){btn.disabled=false;btn.innerHTML=origHTML;}
+  }
+}
+
 async function downloadAgencyZip(mode,agency,btn){
   if(typeof JSZip==='undefined'){alert('JSZip 라이브러리가 필요해요.');return;}
   const result=mode==='linked'?linkedResult:manualResult;
@@ -1551,16 +1705,14 @@ async function downloadAllZip(mode,btn){
     const outer=new JSZip();
     for(const agency of agencies){
       const items=result.assignments.filter(a=>a.agency===agency&&a.assigned);
-      const inner=new JSZip();
+      const agencyFolder=outer.folder(agency);
       for(const a of items){
         const folderName=a.format==='릴스'?`${a.dateNorm}_${a.channel}_썸네일${a.thumbSec}초`:`${a.dateNorm}_${a.agency}_${a.channel}`;
-        const folder=inner.folder(folderName);
+        const folder=agencyFolder.folder(folderName);
         folder.file(a.file.name,a.file);
         if(a.sideFiles)a.sideFiles.forEach(f=>folder.file(f.name,f));
         if(a.caption)folder.file('캡션_해시태그.txt',a.caption);
       }
-      const blob=await inner.generateAsync({type:'blob'});
-      outer.file(`${agency}.zip`,blob);
     }
     const blob=await outer.generateAsync({type:'blob'});
     const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`전체_소재배정_${new Date().toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'}).replace(/\.\s*/g,'').replace(/\./,'')}.zip`;link.click();
