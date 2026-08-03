@@ -1601,24 +1601,48 @@ async function driveAllZip(mode,btn){
   const agencies=[...new Set(result.assignments.filter(a=>a.assigned).map(a=>a.agency))];
   if(!agencies.length){alert('업로드할 파일이 없어요.');return;}
   const origHTML=btn?btn.innerHTML:null;
-  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2 spinning" style="font-size:14px"></i> 압축 중...';}
+  if(btn){btn.disabled=true;btn.innerHTML=`<i class="ti ti-loader-2 spinning" style="font-size:14px"></i> 압축 중...`;}
   try{
-    const outer=new JSZip();
-    for(const agency of agencies){
+    const token=await getGToken();
+    // 병렬: 먼저 모든 ZIP을 생성하고, 동시에 업로드
+    const uploadOne=async(agency)=>{
       const items=result.assignments.filter(a=>a.agency===agency&&a.assigned);
-      const agencyFolder=outer.folder(agency);
+      const inner=new JSZip();
       for(const a of items){
         const folderName=a.format==='릴스'?`${a.dateNorm}_${a.channel}_썸네일${a.thumbSec}초`:`${a.dateNorm}_${a.agency}_${a.channel}`;
-        const folder=agencyFolder.folder(folderName);
+        const folder=inner.folder(folderName);
         folder.file(a.file.name,a.file);
         if(a.sideFiles)a.sideFiles.forEach(f=>folder.file(f.name,f));
         if(a.caption)folder.file('캡션_해시태그.txt',a.caption);
       }
-    }
-    const blob=await outer.generateAsync({type:'blob'});
-    const filename=`전체_소재배정_${new Date().toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'}).replace(/\.\s*/g,'').replace(/\./,'')}.zip`;
-    if(btn)btn.innerHTML=origHTML;
-    await uploadToDrive(blob,filename,btn);
+      const blob=await inner.generateAsync({type:'blob'});
+      const meta={name:`${agency}.zip`,mimeType:'application/zip'};
+      const form=new FormData();
+      form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
+      form.append('file',blob);
+      if(btn)btn.innerHTML=`<i class="ti ti-loader-2 spinning" style="font-size:14px"></i> 업로드 중...`;
+      const res=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{Authorization:'Bearer '+token},body:form});
+      const file=await res.json();
+      if(!file.id)throw new Error(`${agency} 업로드 실패`);
+      await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}/permissions`,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({role:'reader',type:'anyone'})});
+      return{agency,link:`https://drive.google.com/file/d/${file.id}/view?usp=sharing`};
+    };
+    const links=await Promise.all(agencies.map(uploadOne));
+    if(btn){btn.disabled=false;btn.innerHTML=origHTML;}
+    // 링크 목록 모달 표시
+    const listHTML=links.map(({agency,link})=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:0.5px solid #f3f4f6">
+        <span style="font-size:13px;font-weight:500;flex:1">${agency}</span>
+        <button onclick="navigator.clipboard.writeText('${link}').then(()=>{this.textContent='복사됨✓';setTimeout(()=>this.textContent='복사',2000);})" style="font-size:12px;padding:4px 10px;border-radius:4px;border:1px solid #d1d5db;background:#fff;cursor:pointer">복사</button>
+        <button onclick="window.open('${link}','_blank')" style="font-size:12px;padding:4px 10px;border-radius:4px;border:none;background:#1a73e8;color:#fff;cursor:pointer">열기</button>
+      </div>`).join('');
+    const modal=document.getElementById('drive-link-modal-overlay');
+    modal.querySelector('div').innerHTML=`
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px">✅ 업로드 완료</div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:12px">업체별 링크예요</div>
+      <div style="max-height:320px;overflow-y:auto">${listHTML}</div>
+      <button onclick="document.getElementById('drive-link-modal-overlay').style.display='none'" style="margin-top:16px;width:100%;font-size:13px;padding:8px;border-radius:6px;border:1px solid #d1d5db;background:#fff;cursor:pointer">닫기</button>`;
+    modal.style.display='flex';
   }catch(e){alert('오류: '+e);if(btn){btn.disabled=false;btn.innerHTML=origHTML;}}
 }
 
@@ -1724,14 +1748,16 @@ async function downloadAllZip(mode,btn){
     const outer=new JSZip();
     for(const agency of agencies){
       const items=result.assignments.filter(a=>a.agency===agency&&a.assigned);
-      const agencyFolder=outer.folder(agency);
+      const inner=new JSZip();
       for(const a of items){
         const folderName=a.format==='릴스'?`${a.dateNorm}_${a.channel}_썸네일${a.thumbSec}초`:`${a.dateNorm}_${a.agency}_${a.channel}`;
-        const folder=agencyFolder.folder(folderName);
+        const folder=inner.folder(folderName);
         folder.file(a.file.name,a.file);
         if(a.sideFiles)a.sideFiles.forEach(f=>folder.file(f.name,f));
         if(a.caption)folder.file('캡션_해시태그.txt',a.caption);
       }
+      const innerBlob=await inner.generateAsync({type:'blob'});
+      outer.file(`${agency}.zip`,innerBlob);
     }
     const blob=await outer.generateAsync({type:'blob'});
     const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`전체_소재배정_${new Date().toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'}).replace(/\.\s*/g,'').replace(/\./,'')}.zip`;link.click();
