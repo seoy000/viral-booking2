@@ -477,9 +477,7 @@ function _effSync(origCh,origFmt,field,val){
   clearTimeout(_effSyncTimer[key]);
   _effSyncTimer[key]=setTimeout(async()=>{
     try{
-      const res=await fetch(WEBAPP_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'updateChannel',originalChannel:origCh,originalFormat:origFmt,field,value:String(val)})});
-      const json=await res.json();
-      if(json.status!=='ok')console.warn('시트 반영 실패:',json);
+      await fetch(WEBAPP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'updateChannel',originalChannel:origCh,originalFormat:origFmt,field,value:String(val)})});
     }catch(e){console.warn('시트 반영 오류:',e);}
   },800);
 }
