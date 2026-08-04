@@ -455,7 +455,7 @@ document.addEventListener('click',function(e){if(!e.target.closest('[style*="pos
 function updateAgencyFilter(){const agencies=[...new Set(channelDB.map(r=>r.agency))];const container=document.getElementById('dd-agency');const checked=getChecked('filter-agency-cb');container.innerHTML=agencies.map(a=>`<label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer"><input type="checkbox" value="${a}" onchange="renderTable()" class="filter-agency-cb" ${checked.includes(a)?'checked':''}> ${a}</label>`).join('');}
 function getChecked(cls){return [...document.querySelectorAll('.'+cls+':checked')].map(el=>el.value);}
 function updateFilterLabels(){const fmt=getChecked('filter-format-cb');const grade=getChecked('filter-grade-cb');const agency=getChecked('filter-agency-cb');document.getElementById('dd-format-label').textContent=fmt.length?`(${fmt.length})`:'';document.getElementById('dd-grade-label').textContent=grade.length?`(${grade.length})`:'';document.getElementById('dd-agency-label').textContent=agency.length?`(${agency.length})`:'';}
-function computeCPV(r){return r.views&&r.views>0?r.price/r.views:null;}
+function computeCPV(r){return r.expectedViews&&r.expectedViews>0?r.price/r.expectedViews:null;}
 function computeListupCPV(r){const v=r.expectedViews>0?r.expectedViews:(r.views>0?r.views:0);return v>0?r.price/v:null;}
 function gradeFromCPV(c){if(c===null)return '-';if(c<=2)return '상';if(c<=5)return '중';return '하';}
 function badgeClass(g){if(g==='상')return 'badge-up';if(g==='중')return 'badge-mid';if(g==='하')return 'badge-dn';return '';}
